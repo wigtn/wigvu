@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
-import { AnalysisView } from "@/components/analysis-view";
 import { LoadingState } from "@/components/loading-state";
 import { VideoAnalysis, AnalyzeResponse } from "@/types/analysis";
-import { getRandomSampleVideo } from "@/mocks/sample-videos";
-import { RotateCcw, AlertCircle, Zap } from "lucide-react";
+import { sampleVideos } from "@/mocks/sample-videos";
+import { analysisStore } from "@/store/analysis-store";
+import { RotateCcw, AlertCircle, Zap, TestTube } from "lucide-react";
 
 async function analyzeVideo(url: string): Promise<VideoAnalysis> {
   const response = await fetch("/api/analyze", {
@@ -26,47 +27,32 @@ async function analyzeVideo(url: string): Promise<VideoAnalysis> {
 }
 
 export default function Home() {
-  const [result, setResult] = useState<VideoAnalysis | null>(null);
-  const [sampleVideo, setSampleVideo] = useState<VideoAnalysis | null>(null);
-
-  useEffect(() => {
-    setSampleVideo(getRandomSampleVideo());
-  }, []);
+  const router = useRouter();
+  const [showTestMenu, setShowTestMenu] = useState(false);
 
   const mutation = useMutation({
     mutationFn: analyzeVideo,
     onSuccess: (data) => {
-      setResult(data);
+      // store에 저장 후 라우트 이동
+      analysisStore.set(data);
+      router.push(`/analyze/${data.videoId}`);
     },
   });
 
   const handleAnalyze = (url: string) => {
-    setResult(null);
     mutation.mutate(url);
   };
 
   const handleReset = () => {
-    setResult(null);
     mutation.reset();
   };
 
-  const handleTrySample = () => {
-    if (sampleVideo) {
-      setResult(sampleVideo);
-    }
+  const handleTrySample = (video: VideoAnalysis) => {
+    // store에 저장 후 라우트 이동
+    analysisStore.set(video);
+    router.push(`/analyze/${video.videoId}`);
+    setShowTestMenu(false);
   };
-
-  // 분석 결과가 있을 때: 전체 화면 분석 뷰
-  if (result) {
-    return (
-      <AnalysisView
-        analysis={result}
-        onReset={handleReset}
-        onNewAnalyze={handleAnalyze}
-        isLoading={mutation.isPending}
-      />
-    );
-  }
 
   // 로딩 중
   if (mutation.isPending) {
@@ -121,20 +107,36 @@ export default function Home() {
           <UrlInput onAnalyze={handleAnalyze} isLoading={mutation.isPending} />
         </div>
 
-        {/* Sample Button */}
-        {sampleVideo && (
-          <div className="text-center">
-            <button
-              onClick={handleTrySample}
-              className="text-sm text-muted-foreground hover:text-accent transition-colors"
-            >
-              또는{" "}
-              <span className="underline underline-offset-2">
-                샘플 영상으로 체험하기
-              </span>
-            </button>
-          </div>
-        )}
+        {/* Mock Data Test Menu */}
+        <div className="text-center relative">
+          <button
+            onClick={() => setShowTestMenu(!showTestMenu)}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <TestTube className="w-4 h-4" />
+            <span className="underline underline-offset-2">
+              샘플 영상으로 테스트
+            </span>
+          </button>
+
+          {showTestMenu && (
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-10 p-2 max-h-80 overflow-y-auto">
+              {sampleVideos.map((video) => (
+                <button
+                  key={video.id}
+                  onClick={() => handleTrySample(video)}
+                  className="w-full text-left p-3 rounded-md hover:bg-muted transition-colors"
+                >
+                  <p className="text-sm font-medium truncate">{video.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {video.channelName} · {video.language.toUpperCase()}
+                    {video.isKorean && " · 한국어"}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

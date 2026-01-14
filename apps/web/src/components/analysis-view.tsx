@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useId } from "react";
 import { VideoAnalysis } from "@/types/analysis";
+import { YTPlayer } from "@/types/youtube";
 import { formatDuration, formatViewCount } from "@/lib/youtube";
 import { useVideoSync } from "@/hooks/use-video-sync";
 import { ScriptPanel } from "@/components/script-panel";
@@ -14,42 +15,6 @@ import {
   ThumbsUp,
   AlertCircle,
 } from "lucide-react";
-
-// YouTube Player types
-declare global {
-  interface Window {
-    YT: {
-      Player: new (
-        elementId: string,
-        options: {
-          videoId: string;
-          width?: string | number;
-          height?: string | number;
-          playerVars?: {
-            autoplay?: number;
-            start?: number;
-            rel?: number;
-            modestbranding?: number;
-          };
-          events?: {
-            onReady?: () => void;
-            onStateChange?: (event: { data: number }) => void;
-          };
-        }
-      ) => YTPlayer;
-    };
-    onYouTubeIframeAPIReady: () => void;
-  }
-}
-
-interface YTPlayer {
-  getCurrentTime: () => number;
-  getPlayerState: () => number;
-  seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
-  playVideo: () => void;
-  pauseVideo: () => void;
-  destroy: () => void;
-}
 
 interface AnalysisViewProps {
   analysis: VideoAnalysis;
@@ -67,7 +32,9 @@ export function AnalysisView({
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
-  const playerId = `youtube-player-${analysis.videoId}`;
+  // React useId로 고유한 ID 생성 (컴포넌트 인스턴스마다 다름)
+  const uniqueId = useId();
+  const playerId = `yt-player-${uniqueId.replace(/:/g, "")}`;
 
   const {
     activeSegmentIndex,
@@ -81,17 +48,23 @@ export function AnalysisView({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const currentPlayerId = playerId;
+    let player: YTPlayer | null = null;
+
     const loadPlayer = () => {
       if (!containerRef.current) return;
 
-      let playerDiv = document.getElementById(playerId);
-      if (!playerDiv) {
-        playerDiv = document.createElement("div");
-        playerDiv.id = playerId;
-        containerRef.current.appendChild(playerDiv);
+      // 기존 플레이어 div 제거 후 새로 생성
+      const existingDiv = document.getElementById(currentPlayerId);
+      if (existingDiv) {
+        existingDiv.remove();
       }
 
-      const player = new window.YT.Player(playerId, {
+      const playerDiv = document.createElement("div");
+      playerDiv.id = currentPlayerId;
+      containerRef.current.appendChild(playerDiv);
+
+      player = new window.YT.Player(currentPlayerId, {
         videoId: analysis.videoId,
         width: "100%",
         height: "100%",
@@ -122,12 +95,24 @@ export function AnalysisView({
     }
 
     return () => {
+      // 플레이어 정리
       if (playerRef.current) {
-        playerRef.current.destroy();
+        try {
+          playerRef.current.destroy();
+        } catch {
+          // 이미 파괴된 경우 무시
+        }
         playerRef.current = null;
       }
+      // useVideoSync의 player도 정리
+      setPlayer(null);
+      // DOM 요소 제거
+      const playerDiv = document.getElementById(currentPlayerId);
+      if (playerDiv) {
+        playerDiv.remove();
+      }
     };
-  }, [analysis.videoId, setPlayer]);
+  }, [analysis.videoId, playerId, setPlayer]);
 
   const handleSegmentClick = useCallback(
     (seconds: number) => {
@@ -158,7 +143,7 @@ export function AnalysisView({
             onClick={onReset}
             className="text-lg font-bold tracking-tight text-accent hover:opacity-80 transition-opacity"
           >
-            WIGTN
+            QuickPreview
           </button>
 
           {/* URL Input */}
@@ -190,11 +175,12 @@ export function AnalysisView({
       </header>
 
       {/* Main Content - Video + Transcript */}
-      <main className="flex-1 flex min-h-0">
+      {/* 데스크탑: 가로 레이아웃 / 모바일: 세로 레이아웃 */}
+      <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-auto lg:overflow-hidden">
         {/* Left: Video Player & Info */}
-        <div className="flex-1 flex flex-col min-w-0 p-4 gap-3">
+        <div className="shrink-0 lg:flex-1 flex flex-col min-w-0 p-4 gap-3">
           {/* Video Player */}
-          <div className="flex-1 min-h-0">
+          <div className="aspect-video lg:flex-1 lg:aspect-auto min-h-0">
             <div
               ref={containerRef}
               className="w-full h-full bg-black rounded-md overflow-hidden [&>iframe]:w-full [&>iframe]:h-full"
@@ -210,7 +196,7 @@ export function AnalysisView({
           </div>
 
           {/* Video Info Bar */}
-          <div className="flex-shrink-0 flex items-start gap-4">
+          <div className="shrink-0 flex items-start gap-4">
             <div className="flex-1 min-w-0">
               <h1 className="text-base font-semibold leading-tight truncate">
                 {analysis.title}
@@ -221,7 +207,7 @@ export function AnalysisView({
             </div>
 
             {/* Mobile Stats */}
-            <div className="flex md:hidden items-center gap-2 text-xs text-muted-foreground shrink-0">
+            <div className="flex lg:hidden items-center gap-2 text-xs text-muted-foreground shrink-0">
               <span className="flex items-center gap-1">
                 <Eye className="w-3 h-3" />
                 {formatViewCount(analysis.viewCount)}
@@ -234,8 +220,19 @@ export function AnalysisView({
           </div>
         </div>
 
-        {/* Right: Script Panel */}
-        <div className="w-[320px] lg:w-[380px] flex-shrink-0 border-l border-border">
+        {/* 모바일: 핵심장면 (영상 바로 아래) */}
+        <div className="lg:hidden shrink-0 border-t border-border bg-(--background-elevated)">
+          <KeyMomentsBar
+            highlights={analysis.highlights}
+            keywords={analysis.keywords}
+            watchScore={analysis.watchScore}
+            scoreLabel={scoreLabel}
+            onMomentClick={handleSegmentClick}
+          />
+        </div>
+
+        {/* Right: Script Panel - 모바일에서는 아래에, 데스크탑에서는 오른쪽에 */}
+        <div className="flex-1 lg:flex-none lg:w-80 xl:w-95 border-t lg:border-t-0 lg:border-l border-border min-h-64 lg:min-h-0">
           {hasSegments ? (
             <ScriptPanel
               segments={analysis.transcriptSegments!}
@@ -246,7 +243,7 @@ export function AnalysisView({
               isKorean={analysis.isKorean}
             />
           ) : (
-            <div className="h-full flex items-center justify-center bg-[var(--background-elevated)]">
+            <div className="h-full flex items-center justify-center bg-(--background-elevated)">
               <div className="text-center text-muted-foreground p-4">
                 <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">자막을 사용할 수 없습니다</p>
@@ -256,8 +253,8 @@ export function AnalysisView({
         </div>
       </main>
 
-      {/* Footer - Key Moments & Keywords */}
-      <footer className="flex-shrink-0 border-t border-border bg-[var(--background-elevated)]">
+      {/* Footer - Key Moments & Keywords (데스크탑만) */}
+      <footer className="hidden lg:block shrink-0 border-t border-border bg-(--background-elevated)">
         <KeyMomentsBar
           highlights={analysis.highlights}
           keywords={analysis.keywords}

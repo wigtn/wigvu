@@ -5,6 +5,8 @@ import { TranscriptSegment } from "@/types/analysis";
 import { Languages, Scroll } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type DisplayMode = "both" | "original" | "translated";
+
 interface ScriptPanelProps {
   segments: TranscriptSegment[];
   activeIndex: number;
@@ -30,7 +32,7 @@ export function ScriptPanel({
 }: ScriptPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
-  const [showOriginal, setShowOriginal] = useState(false);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("both");
 
   // 자동 스크롤
   useEffect(() => {
@@ -56,11 +58,11 @@ export function ScriptPanel({
   );
 
   return (
-    <div className="flex flex-col h-full bg-[var(--background-elevated)]">
+    <div className="flex flex-col h-full bg-(--background-elevated)">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <Languages className="w-4 h-4 text-accent" />
+          <Languages className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">
             {isKorean ? "자막" : "번역 스크립트"}
           </span>
@@ -70,19 +72,46 @@ export function ScriptPanel({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 원본/번역 토글 */}
+          {/* 표시 모드 토글 - 한/영, 원문만, 번역본만 */}
           {hasTranslation && !isKorean && (
-            <button
-              onClick={() => setShowOriginal(!showOriginal)}
-              className={cn(
-                "text-xs px-2 py-1 rounded-md transition-all",
-                showOriginal
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-muted hover:bg-muted/80 text-muted-foreground"
-              )}
-            >
-              {showOriginal ? "원본" : "번역"}
-            </button>
+            <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+              <button
+                onClick={() => setDisplayMode("both")}
+                className={cn(
+                  "px-2 py-1 text-xs rounded transition-all",
+                  displayMode === "both"
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="한/영 동시 표시"
+              >
+                한/영
+              </button>
+              <button
+                onClick={() => setDisplayMode("original")}
+                className={cn(
+                  "px-2 py-1 text-xs rounded transition-all",
+                  displayMode === "original"
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="원문만 표시"
+              >
+                원문
+              </button>
+              <button
+                onClick={() => setDisplayMode("translated")}
+                className={cn(
+                  "px-2 py-1 text-xs rounded transition-all",
+                  displayMode === "translated"
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="번역본만 표시"
+              >
+                번역
+              </button>
+            </div>
           )}
 
           {/* 자동 스크롤 토글 */}
@@ -91,7 +120,7 @@ export function ScriptPanel({
             className={cn(
               "p-1.5 rounded-md transition-all",
               autoScrollEnabled
-                ? "bg-accent text-accent-foreground glow-accent-subtle"
+                ? "bg-foreground text-background"
                 : "bg-muted hover:bg-muted/80 text-muted-foreground"
             )}
             title={autoScrollEnabled ? "자동 스크롤 켜짐" : "자동 스크롤 꺼짐"}
@@ -101,13 +130,13 @@ export function ScriptPanel({
         </div>
       </div>
 
-      {/* Segments List */}
+      {/* Segments List - 고정 높이, 자동 스크롤 */}
       <div ref={containerRef} className="flex-1 overflow-y-auto custom-scrollbar">
         {segments.map((segment, index) => {
           const isActive = index === activeIndex;
-          const displayText = showOriginal
-            ? segment.originalText || segment.text
-            : segment.translatedText || segment.text;
+          const originalText = segment.originalText || segment.text;
+          const translatedText = segment.translatedText || segment.text;
+          const showBothTexts = hasTranslation && !isKorean && originalText !== translatedText;
 
           return (
             <button
@@ -118,10 +147,10 @@ export function ScriptPanel({
                 "w-full text-left flex gap-3 px-4 py-3 transition-all border-l-2",
                 isActive
                   ? "bg-accent/10 border-l-accent"
-                  : "border-l-transparent hover:bg-[var(--background-hover)]"
+                  : "border-l-transparent hover:bg-(--background-hover)"
               )}
             >
-              {/* Timestamp */}
+              {/* Timestamp - 활성화 시 파란색 */}
               <span
                 className={cn(
                   "text-xs font-mono shrink-0 pt-0.5",
@@ -131,21 +160,66 @@ export function ScriptPanel({
                 {formatTimestamp(segment.start)}
               </span>
 
-              {/* Text */}
-              <span
-                className={cn(
-                  "text-sm leading-relaxed",
-                  isActive ? "text-foreground" : "text-muted-foreground"
+              {/* Text - 표시 모드에 따라 다르게 */}
+              <div className="flex flex-col gap-1 flex-1">
+                {showBothTexts ? (
+                  displayMode === "both" ? (
+                    <>
+                      {/* 번역본 (한국어) - 진하게 */}
+                      <span
+                        className={cn(
+                          "text-sm leading-relaxed",
+                          isActive ? "text-foreground font-medium" : "text-foreground/90"
+                        )}
+                      >
+                        {translatedText}
+                      </span>
+                      {/* 원문 (영어) - 반투명 */}
+                      <span
+                        className={cn(
+                          "text-xs leading-relaxed",
+                          isActive ? "text-muted-foreground/70" : "text-muted-foreground/50"
+                        )}
+                      >
+                        {originalText}
+                      </span>
+                    </>
+                  ) : displayMode === "original" ? (
+                    <span
+                      className={cn(
+                        "text-sm leading-relaxed",
+                        isActive ? "text-foreground font-medium" : "text-muted-foreground"
+                      )}
+                    >
+                      {originalText}
+                    </span>
+                  ) : (
+                    <span
+                      className={cn(
+                        "text-sm leading-relaxed",
+                        isActive ? "text-foreground font-medium" : "text-muted-foreground"
+                      )}
+                    >
+                      {translatedText}
+                    </span>
+                  )
+                ) : (
+                  <span
+                    className={cn(
+                      "text-sm leading-relaxed",
+                      isActive ? "text-foreground font-medium" : "text-muted-foreground"
+                    )}
+                  >
+                    {isKorean ? segment.text : translatedText}
+                  </span>
                 )}
-              >
-                {displayText}
-              </span>
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* Footer */}
+      {/* Footer - 진행바 */}
       {activeIndex >= 0 && (
         <div className="px-4 py-2 border-t border-border">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
