@@ -39,3 +39,16 @@ coverage/
 
 # Temporary files
 *-player-script.js
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+.pytest_cache/
+*.egg-info/
+.eggs/

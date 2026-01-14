@@ -10,10 +10,14 @@ services:
       - NODE_ENV=production
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - WHISPERX_API_URL=${WHISPERX_API_URL}
+      - AI_SERVICE_URL=http://ai:5000
+      - STT_API_URL=http://ai:5000
+    depends_on:
+      ai:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3030"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -32,22 +36,26 @@ services:
   #   depends_on:
   #     - db
 
-  # Future: AI Backend Service
-  # ai:
-  #   build:
-  #     context: ./apps/ai
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "5000:5000"
-  #   environment:
-  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 1
-  #             capabilities: [gpu]
+  # AI Backend Service - LLM Analysis & STT Proxy
+  ai:
+    build:
+      context: ./apps/ai
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - STT_API_URL=${STT_API_URL:-http://work.soundmind.life:12321}
+      - STT_MAX_DURATION_MINUTES=${STT_MAX_DURATION_MINUTES:-120}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Future: Database
   # db:

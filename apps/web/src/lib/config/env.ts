@@ -10,7 +10,8 @@ const logger = createLogger("Env");
 interface EnvConfig {
   OPENAI_API_KEY: string;
   YOUTUBE_API_KEY: string;
-  STT_API_URL: string;
+  AI_SERVICE_URL: string;
+  STT_API_URL: string;  // deprecated: use AI_SERVICE_URL
   YT_DLP_PATH: string;
   STT_MAX_DURATION_MINUTES: number;
 }
@@ -30,10 +31,14 @@ function validateRequiredEnv(key: string): string {
  * 환경변수 검증 및 기본값 설정
  */
 export function getEnvConfig(): EnvConfig {
+  // AI_SERVICE_URL이 없으면 STT_API_URL을 fallback으로 사용
+  const aiServiceUrl = process.env.AI_SERVICE_URL || process.env.STT_API_URL || "";
+
   return {
     OPENAI_API_KEY: validateRequiredEnv("OPENAI_API_KEY"),
     YOUTUBE_API_KEY: validateRequiredEnv("YOUTUBE_API_KEY"),
-    STT_API_URL: process.env.STT_API_URL || "",
+    AI_SERVICE_URL: aiServiceUrl,
+    STT_API_URL: aiServiceUrl,  // backward compatibility
     YT_DLP_PATH:
       process.env.YT_DLP_PATH ||
       require("path").join(process.cwd(), "bin", "yt-dlp"),

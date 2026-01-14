@@ -7,10 +7,14 @@
       "Bash(npm install:*)",
       "Bash(git add:*)",
       "Bash(git reset:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Implement QuickPreview MVP with video-subtitle sync\n\nPhase 1 MVP implementation for YouTube video translation service:\n\nPRD & Documentation:\n- Add comprehensive PRD document \\(docs/prd/quickpreview-service.md\\)\n\nCore Features:\n- English-first subtitle selection \\(manual > auto > Korean > other\\)\n- Batch translation service using OpenAI API \\(gpt-4o-mini\\)\n- Real-time video-subtitle synchronization \\(100ms polling\\)\n- Script panel with auto-scroll and original/translated toggle\n\nKey Components:\n- src/lib/services/translation.ts: Batch translation with context\n- src/lib/services/transcript.ts: YouTube caption extraction with timestamps\n- src/hooks/use-video-sync.ts: Video-subtitle sync hook\n- src/components/script-panel.tsx: Right-side script panel\n- src/components/analysis-result.tsx: Two-column layout \\(Player + Script\\)\n\nTechnical Highlights:\n- Binary search for active segment detection\n- Concurrent batch processing \\(3 batches at a time\\)\n- Context preservation across translation batches\n- Korean content detection to skip translation\n\nQuality Score: 85/100\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement QuickPreview MVP with video-subtitle sync\n\nPhase 1 MVP implementation for YouTube video translation service:\n\nPRD & Documentation:\n- Add comprehensive PRD document \\(docs/prd/quickpreview-service.md\\)\n\nCore Features:\n- English-first subtitle selection \\(manual > auto > Korean > other\\)\n- Batch translation service using OpenAI API \\(gpt-4o-mini\\)\n- Real-time video-subtitle synchronization \\(100ms polling\\)\n- Script panel with auto-scroll and original/translated toggle\n\nKey Components:\n- src/lib/services/translation.ts: Batch translation with context\n- src/lib/services/transcript.ts: YouTube caption extraction with timestamps\n- src/hooks/use-video-sync.ts: Video-subtitle sync hook\n- src/components/script-panel.tsx: Right-side script panel\n- src/components/analysis-result.tsx: Two-column layout \\(Player + Script\\)\n\nTechnical Highlights:\n- Binary search for active segment detection\n- Concurrent batch processing \\(3 batches at a time\\)\n- Context preservation across translation batches\n- Korean content detection to skip translation\n\nQuality Score: 85/100\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
       "Bash(git commit:*)",
-      "Bash(npm run dev)"
+      "Bash(npm run dev)",
+      "Bash(python -m pytest:*)",
+      "Bash(pip install:*)",
+      "Bash(python3:*)",
+      "Bash(source venv/bin/activate)"
     ]
   }
 }

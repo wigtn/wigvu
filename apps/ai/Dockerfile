@@ -5,8 +5,7 @@ FROM python:3.11-slim AS base
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
