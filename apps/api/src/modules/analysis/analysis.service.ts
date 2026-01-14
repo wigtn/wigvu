@@ -42,11 +42,12 @@ export class AnalysisService {
     const { data: metadata } = await this.youtubeService.getMetadata(videoId);
     this.logger.debug(`Metadata fetched for: ${metadata.title}`);
 
-    // Step 2: Fetch transcript
+    // Step 2: Fetch transcript (with STT fallback if needed)
     const { data: transcript } = await this.transcriptService.getTranscript(
       videoId,
       language,
       true,
+      metadata.duration, // Pass video duration for STT limit check
     );
     this.logger.debug(
       `Transcript fetched: ${transcript.segments.length} segments`,

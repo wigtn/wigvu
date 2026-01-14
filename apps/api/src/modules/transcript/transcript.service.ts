@@ -4,6 +4,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import axios from 'axios';
 import { TranscriptData, TranscriptSegment } from './dto/transcript.dto';
+import { AiClientService } from '../../services/ai-client.service';
 
 interface YouTubeCaption {
   text: string;
@@ -15,18 +16,24 @@ interface YouTubeCaption {
 export class TranscriptService {
   private readonly logger = new Logger(TranscriptService.name);
   private readonly cacheTtl: number;
+  private readonly sttEnabled: boolean;
+  private readonly sttMaxDurationMinutes: number;
 
   constructor(
     private configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private aiClientService: AiClientService,
   ) {
     this.cacheTtl = this.configService.get<number>('cache.transcriptTtl') || 86400000;
+    this.sttEnabled = this.configService.get<boolean>('stt.enabled') ?? true;
+    this.sttMaxDurationMinutes = this.configService.get<number>('stt.maxDurationMinutes') || 20;
   }
 
   async getTranscript(
     videoId: string,
     language?: string,
     useStt = true,
+    videoDurationSeconds?: number,
   ): Promise<{ data: TranscriptData; cached: boolean }> {
     const lang = language || 'auto';
     const cacheKey = `yt:transcript:${videoId}:${lang}`;
@@ -40,7 +47,44 @@ export class TranscriptService {
 
     // Try to fetch YouTube captions
     this.logger.debug(`Fetching transcript for video: ${videoId}`);
-    const transcriptData = await this.fetchYouTubeTranscript(videoId, lang);
+    let transcriptData = await this.fetchYouTubeTranscript(videoId, lang);
+
+    // If no YouTube captions and STT is enabled, try STT fallback
+    if (
+      transcriptData.source === 'none' &&
+      useStt &&
+      this.sttEnabled
+    ) {
+      this.logger.debug(`No YouTube captions found, attempting STT fallback for: ${videoId}`);
+
+      // Check video duration limit for STT
+      const maxDurationSeconds = this.sttMaxDurationMinutes * 60;
+      if (videoDurationSeconds && videoDurationSeconds > maxDurationSeconds) {
+        this.logger.warn(
+          `Video duration (${videoDurationSeconds}s) exceeds STT limit (${maxDurationSeconds}s), skipping STT`,
+        );
+      } else {
+        const sttResult = await this.aiClientService.sttFromVideo(videoId, lang);
+
+        if (sttResult?.success && sttResult.data.segments.length > 0) {
+          transcriptData = {
+            source: 'stt',
+            language: sttResult.data.language,
+            isKorean: sttResult.data.language === 'ko',
+            segments: sttResult.data.segments.map((seg) => ({
+              start: seg.start,
+              end: seg.end,
+              text: seg.text,
+            })),
+          };
+          this.logger.log(
+            `STT fallback successful for ${videoId}: ${transcriptData.segments.length} segments`,
+          );
+        } else {
+          this.logger.warn(`STT fallback failed for video: ${videoId}`);
+        }
+      }
+    }
 
     if (transcriptData.source !== 'none') {
       // Store in cache

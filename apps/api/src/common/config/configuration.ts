@@ -12,6 +12,13 @@ export default () => ({
     apiKey: process.env.YOUTUBE_API_KEY || '',
   },
 
+  stt: {
+    enabled: process.env.STT_ENABLED !== 'false', // default: true
+    maxDurationMinutes: parseInt(process.env.STT_MAX_DURATION_MINUTES || '20', 10),
+    audioDownloadTimeout: parseInt(process.env.STT_AUDIO_TIMEOUT || '60000', 10),
+    transcribeTimeout: parseInt(process.env.STT_TRANSCRIBE_TIMEOUT || '120000', 10),
+  },
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
     max: parseInt(process.env.RATE_LIMIT_MAX || '60', 10),

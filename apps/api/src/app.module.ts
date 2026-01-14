@@ -4,6 +4,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { APP_GUARD } from '@nestjs/core';
 import configuration from './common/config/configuration';
+import { AiClientModule } from './services/ai-client.module';
 import { HealthModule } from './modules/health/health.module';
 import { YoutubeModule } from './modules/youtube/youtube.module';
 import { TranscriptModule } from './modules/transcript/transcript.module';
@@ -32,6 +33,9 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
       ttl: 3600000, // 1 hour default
       max: 100, // Max items in cache
     }),
+
+    // Shared Services
+    AiClientModule,
 
     // Feature Modules
     HealthModule,
