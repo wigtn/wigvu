@@ -48,6 +48,8 @@ export default function AnalyzePage() {
     onSuccess: (data) => {
       // URL도 새 videoId로 업데이트
       if (data.videoId !== videoId) {
+        // store에 저장 후 라우트 이동
+        analysisStore.set(data);
         router.replace(`/analyze/${data.videoId}`);
       }
     },
