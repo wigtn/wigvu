@@ -60,6 +60,7 @@ export function useVideoSync(
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(autoScroll);
+  const [isPlayerSet, setIsPlayerSet] = useState(false); // player 설정 여부 추적
 
   const playerRef = useRef<YTPlayer | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -97,7 +98,7 @@ export function useVideoSync(
   );
 
   /**
-   * 동기화 업데이트
+   * 동기화 업데이트 - activeSegmentIndex를 의존성에서 제거하여 안정화
    */
   const updateSync = useCallback(() => {
     if (!playerRef.current) return;
@@ -110,19 +111,17 @@ export function useVideoSync(
       setIsPlaying(state === YT_PLAYER_STATE.PLAYING);
 
       const newIndex = findActiveSegment(time);
-      if (newIndex !== activeSegmentIndex) {
-        setActiveSegmentIndex(newIndex);
-      }
+      setActiveSegmentIndex((prev) => (newIndex !== prev ? newIndex : prev));
     } catch {
       // Player가 아직 준비되지 않았을 수 있음
     }
-  }, [findActiveSegment, activeSegmentIndex]);
+  }, [findActiveSegment]);
 
   /**
-   * 동기화 시작/중지
+   * 동기화 시작/중지 - isPlayerSet state로 player 설정 감지
    */
   useEffect(() => {
-    if (playerRef.current) {
+    if (isPlayerSet && playerRef.current) {
       // 기존 인터벌 정리
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -138,7 +137,7 @@ export function useVideoSync(
         intervalRef.current = null;
       }
     };
-  }, [syncInterval, updateSync]);
+  }, [syncInterval, updateSync, isPlayerSet]);
 
   /**
    * 특정 시간으로 이동
@@ -152,16 +151,12 @@ export function useVideoSync(
   }, []);
 
   /**
-   * Player 참조 설정
+   * Player 참조 설정 - 의존성을 비워서 안정화 (재생성 방지)
    */
   const setPlayer = useCallback((player: YTPlayer | null) => {
     playerRef.current = player;
-
-    if (player) {
-      // 초기 동기화
-      updateSync();
-    }
-  }, [updateSync]);
+    setIsPlayerSet(!!player); // state 업데이트로 interval 시작 트리거
+  }, []);
 
   /**
    * 자동 스크롤 토글

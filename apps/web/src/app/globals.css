@@ -180,8 +180,8 @@
   }
 
   .bento-card-interactive:hover {
-    border-color: var(--accent);
-    box-shadow: 0 0 20px var(--accent-glow);
+    border-color: var(--foreground-muted);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   }
 
   /* Accent highlight (current subtitle) */
@@ -199,15 +199,15 @@
     box-shadow: 0 0 10px var(--accent-glow);
   }
 
-  /* Button styles */
+  /* Button styles - 흑/백 모노톤 */
   .btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
-    background: var(--accent);
-    color: var(--accent-foreground);
+    background: var(--foreground);
+    color: var(--background);
     font-size: var(--text-sm);
     font-weight: 500;
     border-radius: var(--radius-md);
@@ -217,8 +217,8 @@
   }
 
   .btn-primary:hover {
-    background: var(--accent-secondary);
-    box-shadow: 0 0 20px var(--accent-glow);
+    background: var(--foreground-muted);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   .btn-primary:disabled {
@@ -242,8 +242,8 @@
   }
 
   .btn-ghost:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--foreground);
+    color: var(--foreground);
   }
 
   /* Input styles */
@@ -260,15 +260,15 @@
 
   .input-dark:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 10px var(--accent-glow);
+    border-color: var(--foreground);
+    box-shadow: 0 0 10px rgba(241, 241, 241, 0.15);
   }
 
   .input-dark::placeholder {
     color: var(--foreground-subtle);
   }
 
-  /* Badge */
+  /* Badge - 흑/백 모노톤 */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -276,9 +276,9 @@
     font-size: var(--text-xs);
     font-weight: 500;
     border-radius: 9999px;
-    background: rgba(62, 166, 255, 0.15);
-    color: var(--accent);
-    border: 1px solid rgba(62, 166, 255, 0.3);
+    background: rgba(241, 241, 241, 0.1);
+    color: var(--foreground);
+    border: 1px solid rgba(241, 241, 241, 0.2);
   }
 
   /* Key Moment Card */
@@ -294,7 +294,7 @@
   }
 
   .key-moment-card:hover {
-    border-color: var(--accent);
+    border-color: var(--foreground-muted);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
