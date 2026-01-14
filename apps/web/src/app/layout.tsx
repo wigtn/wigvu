@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { Navigation } from "@/components/navigation";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const geistSans = Geist({
@@ -26,14 +25,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="ko" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ErrorBoundary>
           <Providers>
-            <Navigation />
-            <div className="swiss-page-enter">{children}</div>
+            <div className="viewport-layout">{children}</div>
           </Providers>
         </ErrorBoundary>
       </body>

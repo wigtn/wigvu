@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const STEPS = [
-  { label: "URL 검증 중", duration: 500 },
-  { label: "메타데이터 가져오는 중", duration: 1500 },
-  { label: "자막 추출 중", duration: 2000 },
-  { label: "오디오 처리 중", duration: 8000 },
-  { label: "AI 분석 중", duration: 4000 },
-  { label: "결과 생성 중", duration: 1000 },
+  { label: "URL 검증", duration: 500 },
+  { label: "메타데이터 수집", duration: 1500 },
+  { label: "자막 추출", duration: 2000 },
+  { label: "오디오 처리", duration: 8000 },
+  { label: "AI 분석", duration: 4000 },
+  { label: "결과 생성", duration: 1000 },
 ];
 
 export function LoadingState() {
@@ -16,7 +17,6 @@ export function LoadingState() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    let stepIndex = 0;
     let elapsed = 0;
     const totalDuration = STEPS.reduce((sum, step) => sum + step.duration, 0);
 
@@ -24,6 +24,7 @@ export function LoadingState() {
       elapsed += 100;
 
       let cumulativeDuration = 0;
+      let stepIndex = 0;
       for (let i = 0; i < STEPS.length; i++) {
         cumulativeDuration += STEPS[i].duration;
         if (elapsed < cumulativeDuration) {
@@ -41,115 +42,46 @@ export function LoadingState() {
   }, []);
 
   return (
-    <div className="space-y-12">
-      {/* Progress Header */}
-      <div className="grid grid-cols-12 gap-8 items-end">
-        <div className="col-span-12 md:col-span-3">
-          <p className="swiss-caption">처리 중</p>
+    <div className="bento-card p-8 text-center max-w-md w-full">
+      {/* Spinner */}
+      <div className="relative w-20 h-20 mx-auto mb-6">
+        <div className="absolute inset-0 rounded-full border-2 border-accent/20" />
+        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-accent animate-spin" />
+        <Loader2 className="absolute inset-0 m-auto w-8 h-8 text-accent animate-pulse" />
+      </div>
+
+      {/* Current Step */}
+      <h3 className="text-lg font-semibold mb-2">{STEPS[currentStep]?.label}</h3>
+      <p className="text-sm text-muted-foreground mb-6">
+        영상을 분석하고 있습니다
+      </p>
+
+      {/* Progress Bar */}
+      <div className="space-y-2">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-accent transition-all duration-100 rounded-full"
+            style={{ width: `${progress}%` }}
+          />
         </div>
-        <div className="col-span-12 md:col-span-9">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-medium">
-                {STEPS[currentStep]?.label}
-              </span>
-              <span className="text-sm text-muted-foreground font-mono">
-                {Math.round(progress)}%
-              </span>
-            </div>
-            <div className="h-1 bg-muted w-full">
-              <div
-                className="h-full bg-foreground transition-all duration-100"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{Math.round(progress)}%</span>
+          <span>{currentStep + 1} / {STEPS.length}</span>
         </div>
       </div>
 
-      {/* Steps */}
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 md:col-span-3">
-          <p className="swiss-caption">진행 단계</p>
-        </div>
-        <div className="col-span-12 md:col-span-9">
-          <div className="flex gap-4">
-            {STEPS.map((step, index) => (
-              <div
-                key={index}
-                className={`flex-1 h-1 transition-colors ${
-                  index <= currentStep ? "bg-foreground" : "bg-muted"
-                }`}
-              />
-            ))}
-          </div>
-          <div className="flex justify-between mt-3">
-            <span className="text-xs text-muted-foreground">시작</span>
-            <span className="text-xs text-muted-foreground">완료</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Skeleton Preview */}
-      <div className="border border-border p-8">
-        <div className="grid grid-cols-12 gap-8">
-          {/* Thumbnail Skeleton */}
-          <div className="col-span-12 md:col-span-5">
-            <div className="aspect-video bg-muted animate-pulse" />
-          </div>
-
-          {/* Content Skeleton */}
-          <div className="col-span-12 md:col-span-7 space-y-4">
-            <div className="h-7 bg-muted animate-pulse w-3/4" />
-            <div className="h-5 bg-muted animate-pulse w-1/3" />
-            <div className="flex gap-4 mt-4">
-              <div className="h-4 bg-muted animate-pulse w-20" />
-              <div className="h-4 bg-muted animate-pulse w-20" />
-              <div className="h-4 bg-muted animate-pulse w-20" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Score Skeleton */}
-      <div className="border border-border p-8">
-        <div className="grid grid-cols-12 gap-8 items-center">
-          <div className="col-span-12 md:col-span-3">
-            <div className="h-4 bg-muted animate-pulse w-24 mb-3" />
-            <div className="h-16 bg-muted animate-pulse w-20" />
-          </div>
-          <div className="col-span-12 md:col-span-9">
-            <div className="h-2 bg-muted animate-pulse w-full mb-4" />
-            <div className="flex justify-between">
-              <div className="h-4 bg-muted animate-pulse w-32" />
-              <div className="h-4 bg-muted animate-pulse w-48" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Summary Skeleton */}
-      <div className="swiss-index">
-        <div>
-          <div className="h-4 bg-muted animate-pulse w-20" />
-        </div>
-        <div className="space-y-3">
-          <div className="h-4 bg-muted animate-pulse w-full" />
-          <div className="h-4 bg-muted animate-pulse w-full" />
-          <div className="h-4 bg-muted animate-pulse w-3/4" />
-        </div>
-      </div>
-
-      {/* Keywords Skeleton */}
-      <div className="swiss-index">
-        <div>
-          <div className="h-4 bg-muted animate-pulse w-20" />
-        </div>
-        <div className="flex gap-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-10 bg-muted animate-pulse w-20" />
-          ))}
-        </div>
+      {/* Step Indicators */}
+      <div className="flex justify-center gap-1.5 mt-6">
+        {STEPS.map((_, index) => (
+          <div
+            key={index}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              index <= currentStep
+                ? "bg-accent"
+                : "bg-muted"
+            } ${index === currentStep ? "scale-125" : ""}`}
+          />
+        ))}
       </div>
     </div>
   );
