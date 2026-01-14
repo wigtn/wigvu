@@ -86,8 +86,12 @@ export default function Home() {
 
   // 초기 상태: 심플한 랜딩
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-2xl space-y-8 fade-in">
+    <div className="flex-1 flex flex-col items-center p-6 fade-in">
+      {/* 상단 여백 */}
+      <div className="flex-1 min-h-0" />
+
+      {/* 중앙 컨텐츠 */}
+      <div className="w-full max-w-2xl space-y-6 -mt-16">
         {/* Logo & Title */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm">
@@ -138,6 +142,9 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* 하단 여백 */}
+      <div className="flex-[2] min-h-0" />
     </div>
   );
 }

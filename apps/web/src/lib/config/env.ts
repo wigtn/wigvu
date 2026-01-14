@@ -2,6 +2,7 @@
  * 환경변수 검증 및 설정
  */
 
+import path from "path";
 import { createLogger } from "../logger";
 import { STT } from "../constants";
 
@@ -41,7 +42,7 @@ export function getEnvConfig(): EnvConfig {
     STT_API_URL: aiServiceUrl,  // backward compatibility
     YT_DLP_PATH:
       process.env.YT_DLP_PATH ||
-      require("path").join(process.cwd(), "bin", "yt-dlp"),
+      path.join(process.cwd(), "bin", "yt-dlp"),
     STT_MAX_DURATION_MINUTES: parseInt(
       process.env.STT_MAX_DURATION_MINUTES ||
         STT.DEFAULT_MAX_DURATION_MINUTES.toString()

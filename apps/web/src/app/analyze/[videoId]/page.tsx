@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { AnalysisView } from "@/components/analysis-view";
@@ -25,23 +25,19 @@ async function analyzeVideo(url: string): Promise<VideoAnalysis> {
   return data.data;
 }
 
-// store에서 초기 데이터 가져오기 (렌더링 전에 동기적으로)
-function getInitialAnalysis(): VideoAnalysis | null {
-  const storedData = analysisStore.get();
-  if (storedData) {
-    analysisStore.clear();
-    return storedData;
-  }
-  return null;
-}
-
 export default function AnalyzePage() {
   const router = useRouter();
   const params = useParams();
   const videoId = params.videoId as string;
 
-  // 초기 데이터를 동기적으로 가져옴 (한 번만 실행)
-  const initialAnalysis = useMemo(() => getInitialAnalysis(), []);
+  // useState의 lazy initialization으로 초기 데이터를 한 번만 가져옴
+  const [initialAnalysis] = useState<VideoAnalysis | null>(() => {
+    const data = analysisStore.get();
+    if (data) {
+      analysisStore.clear();
+    }
+    return data;
+  });
 
   const mutation = useMutation({
     mutationFn: analyzeVideo,

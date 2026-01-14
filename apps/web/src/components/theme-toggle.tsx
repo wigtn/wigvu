@@ -1,43 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 
 type Theme = "light" | "dark";
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+// localStorage 기반 theme store
+const themeStore = {
+  listeners: new Set<() => void>(),
 
-  useEffect(() => {
-    setMounted(true);
+  getTheme(): Theme {
+    if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem("theme") as Theme | null;
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
+    if (stored) return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  },
 
-    const initialTheme = stored || (prefersDark ? "dark" : "light");
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle("dark", initialTheme === "dark");
-  }, []);
+  setTheme(theme: Theme) {
+    localStorage.setItem("theme", theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    this.listeners.forEach((listener) => listener());
+  },
 
-  const toggleTheme = () => {
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  },
+};
+
+// 컴포넌트 마운트 시 초기 테마 적용
+if (typeof window !== "undefined") {
+  const initialTheme = themeStore.getTheme();
+  document.documentElement.classList.toggle("dark", initialTheme === "dark");
+}
+
+export function ThemeToggle() {
+  const theme = useSyncExternalStore(
+    (listener) => themeStore.subscribe(listener),
+    () => themeStore.getTheme(),
+    () => "light" as Theme // SSR에서는 항상 light
+  );
+
+  const toggleTheme = useCallback(() => {
     const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-  };
-
-  if (!mounted) {
-    return (
-      <button
-        className="w-10 h-10 flex items-center justify-center border border-border hover:bg-muted transition-colors"
-        aria-label="Toggle theme"
-      >
-        <div className="w-5 h-5" />
-      </button>
-    );
-  }
+    themeStore.setTheme(newTheme);
+  }, [theme]);
 
   return (
     <button
