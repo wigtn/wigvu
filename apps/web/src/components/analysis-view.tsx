@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, useId } from "react";
 import { VideoAnalysis } from "@/types/analysis";
 import { YTPlayer } from "@/types/youtube";
 import { formatDuration, formatViewCount } from "@/lib/youtube";
+import { loadYouTubeAPI } from "@/lib/youtube-api-loader";
 import { useVideoSync } from "@/hooks/use-video-sync";
 import { ScriptPanel } from "@/components/script-panel";
 import { KeyMomentsBar } from "@/components/key-moments-bar";
@@ -50,9 +51,14 @@ export function AnalysisView({
 
     const currentPlayerId = playerId;
     let player: YTPlayer | null = null;
+    let isMounted = true;
 
-    const loadPlayer = () => {
-      if (!containerRef.current) return;
+    const initPlayer = async () => {
+      // YouTube API 로드 대기
+      await loadYouTubeAPI();
+
+      // 컴포넌트가 언마운트되었으면 중단
+      if (!isMounted || !containerRef.current) return;
 
       // 기존 플레이어 div 제거 후 새로 생성
       const existingDiv = document.getElementById(currentPlayerId);
@@ -75,6 +81,7 @@ export function AnalysisView({
         },
         events: {
           onReady: () => {
+            if (!isMounted) return;
             setIsPlayerReady(true);
             playerRef.current = player;
             setPlayer(player);
@@ -83,18 +90,10 @@ export function AnalysisView({
       });
     };
 
-    if (window.YT && window.YT.Player) {
-      loadPlayer();
-    } else {
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName("script")[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-      window.onYouTubeIframeAPIReady = loadPlayer;
-    }
+    initPlayer();
 
     return () => {
+      isMounted = false;
       // 플레이어 정리
       if (playerRef.current) {
         try {
