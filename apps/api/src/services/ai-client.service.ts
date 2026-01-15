@@ -1,6 +1,7 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { AudioDownloadService } from './audio-download.service';
 
 // Types for AI Service
 export interface TranslationSegment {
@@ -29,11 +30,7 @@ export interface SttResponse {
   };
 }
 
-export interface AudioDownloadResponse {
-  success: boolean;
-  data: Buffer;
-  audioDuration?: number;
-}
+// AudioDownloadResponse removed - audio download not supported via API Gateway
 
 export interface TranslatedSegment {
   start: number;
@@ -108,7 +105,11 @@ export class AiClientService {
   private readonly recoveryTimeout: number;
   private readonly halfOpenRequests: number;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @Inject(forwardRef(() => AudioDownloadService))
+    private audioDownloadService: AudioDownloadService,
+  ) {
     const aiConfig = this.configService.get('ai');
     const circuitConfig = this.configService.get('circuitBreaker');
 
@@ -244,43 +245,8 @@ export class AiClientService {
   }
 
   /**
-   * Download audio from YouTube video via AI service
-   */
-  async downloadAudio(videoId: string): Promise<AudioDownloadResponse | null> {
-    if (!this.isCircuitAvailable()) {
-      this.logger.warn('Circuit breaker OPEN - skipping audio download');
-      return null;
-    }
-
-    try {
-      const response = await this.client.post(
-        '/api/v1/audio/download',
-        { videoId },
-        {
-          timeout: 60000, // 60 seconds for audio download
-          responseType: 'arraybuffer',
-        },
-      );
-
-      this.onSuccess();
-
-      const audioDuration = response.headers['x-audio-duration']
-        ? parseFloat(response.headers['x-audio-duration'])
-        : undefined;
-
-      return {
-        success: true,
-        data: Buffer.from(response.data),
-        audioDuration,
-      };
-    } catch (error) {
-      this.onFailure(error);
-      return null;
-    }
-  }
-
-  /**
    * Transcribe audio using STT via AI service
+   * Calls /stt/transcribe endpoint (or legacy /whisperX/transcribe)
    */
   async transcribe(
     audioBuffer: Buffer,
@@ -301,11 +267,17 @@ export class AiClientService {
       });
       formData.append('language', language);
 
-      const response = await this.client.post<SttResponse>(
-        '/api/v1/stt',
+      // Use /stt/transcribe endpoint (ai server)
+      const response = await this.client.post<{
+        text: string;
+        language: string;
+        language_probability: number;
+        segments: Array<{ start: number; end: number; text: string }>;
+      }>(
+        '/stt/transcribe',
         formData,
         {
-          timeout: 120000, // 120 seconds for STT
+          timeout: 300000, // 5 minutes for STT
           headers: {
             ...formData.getHeaders(),
             'X-Internal-API-Key': this.internalApiKey,
@@ -314,7 +286,17 @@ export class AiClientService {
       );
 
       this.onSuccess();
-      return response.data;
+
+      // Transform response to SttResponse format
+      return {
+        success: true,
+        data: {
+          text: response.data.text,
+          language: response.data.language,
+          languageProbability: response.data.language_probability,
+          segments: response.data.segments,
+        },
+      };
     } catch (error) {
       this.onFailure(error);
       return null;
@@ -322,35 +304,51 @@ export class AiClientService {
   }
 
   /**
-   * Full STT pipeline: download audio and transcribe
+   * Download audio from YouTube video and transcribe using STT
+   * @param videoId YouTube video ID
+   * @param language Language hint for STT
+   * @returns STT response with transcription
    */
   async sttFromVideo(
     videoId: string,
     language = 'auto',
   ): Promise<SttResponse | null> {
-    this.logger.log(`Starting STT pipeline for video: ${videoId}`);
-
-    // Step 1: Download audio
-    const audioResult = await this.downloadAudio(videoId);
-    if (!audioResult?.success) {
-      this.logger.warn(`Audio download failed for video: ${videoId}`);
+    if (!this.isCircuitAvailable()) {
+      this.logger.warn('Circuit breaker OPEN - skipping STT from video');
       return null;
     }
 
-    this.logger.debug(
-      `Audio downloaded: ${audioResult.data.length} bytes, duration: ${audioResult.audioDuration}s`,
-    );
+    try {
+      this.logger.log(`Starting STT from video: ${videoId}`);
 
-    // Step 2: Transcribe audio
-    const sttResult = await this.transcribe(audioResult.data, language);
-    if (!sttResult?.success) {
-      this.logger.warn(`STT failed for video: ${videoId}`);
+      // Step 1: Download audio from YouTube
+      const audioResult = await this.audioDownloadService.downloadAudio(videoId);
+
+      if (!audioResult) {
+        this.logger.warn(`Audio download failed for video: ${videoId}`);
+        return null;
+      }
+
+      this.logger.log(
+        `Audio downloaded: ${(audioResult.buffer.length / 1024 / 1024).toFixed(2)}MB, duration: ${audioResult.duration}s`,
+      );
+
+      // Step 2: Send audio to STT service
+      const sttResult = await this.transcribe(audioResult.buffer, language);
+
+      if (sttResult) {
+        this.logger.log(
+          `STT completed for ${videoId}: ${sttResult.data.segments.length} segments`,
+        );
+      }
+
+      return sttResult;
+    } catch (error) {
+      this.logger.error(
+        `STT from video failed for ${videoId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      this.onFailure(error);
       return null;
     }
-
-    this.logger.log(
-      `STT completed for ${videoId}: ${sttResult.data.segments.length} segments`,
-    );
-    return sttResult;
   }
 }

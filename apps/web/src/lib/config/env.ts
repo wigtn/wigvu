@@ -11,8 +11,12 @@ const logger = createLogger("Env");
 interface EnvConfig {
   OPENAI_API_KEY: string;
   YOUTUBE_API_KEY: string;
+  /** NestJS API Gateway URL */
+  API_URL: string;
+  /** @deprecated use API_URL instead - AI 서버 직접 호출용 */
   AI_SERVICE_URL: string;
-  STT_API_URL: string;  // deprecated: use AI_SERVICE_URL
+  /** @deprecated use API_URL instead */
+  STT_API_URL: string;
   YT_DLP_PATH: string;
   STT_MAX_DURATION_MINUTES: number;
 }
@@ -32,12 +36,15 @@ function validateRequiredEnv(key: string): string {
  * 환경변수 검증 및 기본값 설정
  */
 export function getEnvConfig(): EnvConfig {
-  // AI_SERVICE_URL이 없으면 STT_API_URL을 fallback으로 사용
+  // API_URL: NestJS API Gateway (권장)
+  // AI_SERVICE_URL: AI 서버 직접 호출 (deprecated)
+  const apiUrl = process.env.API_URL || "";
   const aiServiceUrl = process.env.AI_SERVICE_URL || process.env.STT_API_URL || "";
 
   return {
     OPENAI_API_KEY: validateRequiredEnv("OPENAI_API_KEY"),
     YOUTUBE_API_KEY: validateRequiredEnv("YOUTUBE_API_KEY"),
+    API_URL: apiUrl,
     AI_SERVICE_URL: aiServiceUrl,
     STT_API_URL: aiServiceUrl,  // backward compatibility
     YT_DLP_PATH:

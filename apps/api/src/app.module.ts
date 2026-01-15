@@ -9,6 +9,7 @@ import { HealthModule } from './modules/health/health.module';
 import { YoutubeModule } from './modules/youtube/youtube.module';
 import { TranscriptModule } from './modules/transcript/transcript.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
+import { TranslateModule } from './modules/translate/translate.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
     YoutubeModule,
     TranscriptModule,
     AnalysisModule,
+    TranslateModule,
   ],
   providers: [
     {

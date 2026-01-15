@@ -51,17 +51,20 @@ export async function translateSegments(
 
   const config = getEnvConfig();
 
-  if (!config.AI_SERVICE_URL) {
-    throw new Error("AI_SERVICE_URL is not configured");
+  // API_URL (NestJS Gateway) 우선, 없으면 AI_SERVICE_URL 직접 호출
+  const baseUrl = config.API_URL || config.AI_SERVICE_URL;
+  if (!baseUrl) {
+    throw new Error("API_URL or AI_SERVICE_URL is not configured");
   }
 
   logger.info("번역 시작", {
     totalSegments: segments.length,
     sourceLanguage,
     targetLanguage,
+    via: config.API_URL ? "NestJS Gateway" : "AI Service Direct",
   });
 
-  const response = await fetch(`${config.AI_SERVICE_URL}/api/v1/translate`, {
+  const response = await fetch(`${baseUrl}/api/v1/translate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
