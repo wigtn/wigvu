@@ -71,7 +71,7 @@ export function UrlInput({ onAnalyze, isLoading, compact = false }: UrlInputProp
       <div className="flex gap-3">
         <input
           type="text"
-          placeholder="YouTube URL을 붙여넣으세요..."
+          placeholder="어떤 영상이 궁금하신가요? 지금 바로 분석해보세요!"
           value={url}
           onChange={(e) => {
             setUrl(e.target.value);

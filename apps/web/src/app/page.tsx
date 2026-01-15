@@ -535,10 +535,10 @@ export default function Home() {
         <div className="max-w-2xl mx-auto w-full space-y-6 md:space-y-8">
           <div className="text-center space-y-2 md:space-y-3">
             <h2 className="text-xl md:text-3xl font-bold">
-              YouTube URL을 입력하세요
+              보고 싶은 영상의 링크를 입력해보세요!
             </h2>
             <p className="text-sm md:text-base text-muted-foreground">
-              링크를 붙여넣으면 AI가 자동으로 분석을 시작합니다
+              WIGTN AI가 내용을 분석하여 최고의 학습 도우미가 됩니다 ✨
             </p>
           </div>
 
