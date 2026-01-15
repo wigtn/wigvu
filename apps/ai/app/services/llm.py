@@ -143,13 +143,32 @@ class LLMService:
 
         system_prompt += "\n\nJSON만 반환하세요. 다른 텍스트는 포함하지 마세요."
 
-        logger.info(
-            "llm_analysis_start",
-            model=self.model,
-            has_transcript=bool(formatted_transcript),
-            has_timestamps=has_timestamps,
-            title_length=len(metadata.title)
-        )
+        # 세그먼트 시간 범위 로그
+        if segments and len(segments) > 0:
+            logger.info(
+                "llm_analysis_start",
+                model=self.model,
+                has_transcript=bool(formatted_transcript),
+                has_timestamps=has_timestamps,
+                title_length=len(metadata.title),
+                segments_count=len(segments),
+                first_segment_start=segments[0].start,
+                last_segment_end=segments[-1].end
+            )
+            # 포맷된 트랜스크립트 샘플 (DEBUG)
+            logger.debug(
+                "llm_formatted_transcript_sample",
+                first_500_chars=formatted_transcript[:500] if formatted_transcript else None,
+                last_500_chars=formatted_transcript[-500:] if formatted_transcript and len(formatted_transcript) > 500 else None
+            )
+        else:
+            logger.info(
+                "llm_analysis_start",
+                model=self.model,
+                has_transcript=bool(formatted_transcript),
+                has_timestamps=has_timestamps,
+                title_length=len(metadata.title)
+            )
 
         try:
             result = await self._call_openai_with_retry(system_prompt, content)
@@ -181,13 +200,26 @@ class LLMService:
 
         # 타임스탬프 검증 및 보정
         raw_highlights = result.get("highlights", [])
+
+        # LLM 원본 응답 로그 (DEBUG)
+        logger.debug(
+            "llm_raw_response",
+            raw_highlights=[
+                {"timestamp": h.get("timestamp"), "title": h.get("title")}
+                for h in raw_highlights
+            ]
+        )
+
         validated_highlights = self._validate_highlights(raw_highlights, segments)
 
+        # 보정 전후 비교 로그
         logger.info(
             "llm_analysis_complete",
             watch_score=result.get("watchScore"),
             keywords_count=len(result.get("keywords", [])),
-            highlights_count=len(validated_highlights)
+            highlights_count=len(validated_highlights),
+            raw_timestamps=[h.get("timestamp") for h in raw_highlights],
+            validated_timestamps=[h.get("timestamp") for h in validated_highlights]
         )
 
         return AnalysisResult(

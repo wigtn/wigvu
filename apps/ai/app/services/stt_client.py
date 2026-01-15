@@ -134,12 +134,38 @@ class STTClient:
                 details={"error": str(e)}
             )
 
-        logger.info(
-            "stt_request_complete",
-            text_length=len(result.get("text", "")),
-            language=result.get("language"),
-            segments_count=len(result.get("segments", []))
-        )
+        segments = result.get("segments", [])
+
+        # 세그먼트 시간 범위 로그
+        if segments:
+            first_seg = segments[0]
+            last_seg = segments[-1]
+            logger.info(
+                "stt_request_complete",
+                text_length=len(result.get("text", "")),
+                language=result.get("language"),
+                segments_count=len(segments),
+                first_segment_start=first_seg.get("start"),
+                first_segment_end=first_seg.get("end"),
+                last_segment_start=last_seg.get("start"),
+                last_segment_end=last_seg.get("end"),
+                total_duration=last_seg.get("end")
+            )
+            # 모든 세그먼트 시간 상세 로그 (DEBUG 레벨)
+            logger.debug(
+                "stt_segments_detail",
+                segments=[
+                    {"idx": i, "start": s.get("start"), "end": s.get("end"), "text": s.get("text", "")[:30]}
+                    for i, s in enumerate(segments[:10])  # 처음 10개만
+                ]
+            )
+        else:
+            logger.info(
+                "stt_request_complete",
+                text_length=len(result.get("text", "")),
+                language=result.get("language"),
+                segments_count=0
+            )
 
         return STTResponse(
             text=result.get("text", ""),
