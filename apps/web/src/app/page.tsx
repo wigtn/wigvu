@@ -139,13 +139,13 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nextSlide, prevSlide]);
 
-  // 자동 슬라이드 (10초마다, 무한 루프)
+  // 자동 슬라이드 (2초마다, 무한 루프)
   useEffect(() => {
     if (isTransitioning) return;
 
     const timer = setInterval(() => {
       nextSlide();
-    }, 10000);
+    }, 2000);
 
     return () => clearInterval(timer);
   }, [isTransitioning, nextSlide]);
