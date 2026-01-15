@@ -1,4 +1,5 @@
 """QuickPreview AI Service - FastAPI Application"""
+# CI/CD Test: 2026-01-16
 
 import logging
 import structlog
