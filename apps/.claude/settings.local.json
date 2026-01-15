@@ -18,7 +18,12 @@
       "Bash(docker-compose restart:*)",
       "Bash(xargs -I {} curl -s \"{}\")",
       "Bash(docker exec:*)",
-      "Skill(code-review)"
+      "Skill(code-review)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(docker build:*)",
+      "Bash(docker push:*)",
+      "Bash(git restore:*)"
     ]
   }
 }
