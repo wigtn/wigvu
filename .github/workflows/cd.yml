@@ -189,6 +189,7 @@ jobs:
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --command="
+              git config --global --add safe.directory /opt/quickpreview && \
               cd /opt/quickpreview && \
               git pull origin main && \
               docker compose -f docker-compose.hub.yml pull && \
