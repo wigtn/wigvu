@@ -1,0 +1,125 @@
+name: CD - Deploy to GCP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_ZONE: ${{ secrets.GCP_ZONE }}
+  GCE_INSTANCE: ${{ secrets.GCE_INSTANCE }}
+
+jobs:
+  # CI 검증 (빌드 테스트)
+  ci:
+    name: CI Validation
+    uses: ./.github/workflows/ci.yml
+
+  # Docker 이미지 빌드 및 GCR 푸시
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Build and push Web image
+        run: |
+          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:${{ github.sha }} \
+            -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:latest \
+            ./apps/web
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:${{ github.sha }}
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:latest
+
+      - name: Build and push API image
+        run: |
+          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:${{ github.sha }} \
+            -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:latest \
+            ./apps/api
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:${{ github.sha }}
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:latest
+
+      - name: Build and push AI image
+        run: |
+          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:${{ github.sha }} \
+            -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:latest \
+            ./apps/ai
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:${{ github.sha }}
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:latest
+
+  # GCE 배포
+  deploy:
+    name: Deploy to GCE
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to GCE
+        run: |
+          gcloud compute ssh ${{ env.GCE_INSTANCE }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --command="
+              cd /opt/quickpreview && \
+              git pull origin main && \
+              gcloud auth configure-docker && \
+              docker compose -f docker-compose.gce.yml pull && \
+              docker compose -f docker-compose.gce.yml up -d --remove-orphans && \
+              docker system prune -f
+            "
+
+      - name: Health check
+        run: |
+          sleep 30
+          gcloud compute ssh ${{ env.GCE_INSTANCE }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --command="
+              curl -f http://localhost:4000/api/v1/health || exit 1
+              curl -f http://localhost:3000 || exit 1
+            "
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
