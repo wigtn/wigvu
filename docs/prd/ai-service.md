@@ -1,9 +1,9 @@
 # QuickPreview AI Service PRD
 
-> **Version**: 2.1
+> **Version**: 2.2
 > **Created**: 2026-01-14
 > **Updated**: 2026-01-15
-> **Status**: Draft (Reviewed)
+> **Status**: Implemented
 > **Project**: QuickPreview AI (apps/ai)
 
 ---
@@ -125,6 +125,7 @@ Scenario: 외부 API 실패 시 에러 응답
 | **FR-AI-006** | 에러 핸들링 | P0 (Must) | - |
 | **FR-AI-007** | 입력값 검증 | P0 (Must) | - |
 | **FR-AI-008** | 재시도 로직 | P1 (Should) | - |
+| **FR-AI-009** | 자막 번역 API | P1 (Should) | OpenAI API |
 
 ### 3.2 Feature Details
 
@@ -147,7 +148,7 @@ Scenario: 외부 API 실패 시 에러 응답
 |-------|----------|------------|-------------|
 | metadata.title | Yes | 200자 | 영상 제목 |
 | metadata.channelName | Yes | 100자 | 채널명 |
-| metadata.description | No | 2000자 | 영상 설명 |
+| metadata.description | No | 10000자 | 영상 설명 |
 | transcript | No | 50000자 | 자막 텍스트 |
 | segments | No | 1000개 | 타임스탬프 세그먼트 |
 
@@ -192,6 +193,24 @@ Scenario: 외부 API 실패 시 에러 응답
 | 백오프 간격 | 1초, 2초, 4초 |
 | 재시도 대상 | 5xx 에러, 타임아웃 |
 | 재시도 제외 | 4xx 에러 |
+
+#### FR-AI-009: 자막 번역 API
+
+**목적**: 영어 자막을 한국어로 번역
+
+**입력**:
+- 세그먼트 배열 (start, end, text)
+- 소스 언어 (기본: "en")
+- 타겟 언어 (기본: "ko")
+
+**출력**:
+- 번역된 세그먼트 배열 (originalText, translatedText)
+- 처리 시간, 번역 개수 메타데이터
+
+**처리 방식**:
+- 배치 처리 (10개 세그먼트씩)
+- 컨텍스트 보존 (이전 번역 참조)
+- 동시 처리 (최대 3개 배치)
 
 ---
 
@@ -296,7 +315,7 @@ Scenario: 외부 API 실패 시 에러 응답
 
 ---
 
-#### `POST /analyze`
+#### `POST /api/v1/analyze`
 
 **Description**: LLM 기반 영상 분석
 
@@ -306,7 +325,7 @@ Scenario: 외부 API 실패 시 에러 응답
   "metadata": {
     "title": "string (required, max 200자)",
     "channelName": "string (required, max 100자)",
-    "description": "string (optional, max 2000자)"
+    "description": "string (optional, max 10000자)"
   },
   "transcript": "string (optional, max 50000자)",
   "segments": [
@@ -363,6 +382,56 @@ Scenario: 외부 API 실패 시 에러 응답
   }
 }
 ```
+
+---
+
+#### `POST /api/v1/translate`
+
+**Description**: 자막 세그먼트 번역 (영어 → 한국어)
+
+**Request Body (JSON)**:
+```json
+{
+  "segments": [
+    {
+      "start": "number (seconds)",
+      "end": "number (seconds)",
+      "text": "string (required, min 1자)"
+    }
+  ],
+  "sourceLanguage": "string (default: 'en')",
+  "targetLanguage": "string (default: 'ko')"
+}
+```
+
+**Response 200 OK**:
+```json
+{
+  "success": true,
+  "data": {
+    "segments": [
+      {
+        "start": "number (seconds)",
+        "end": "number (seconds)",
+        "originalText": "string - 원본 텍스트",
+        "translatedText": "string - 번역된 텍스트"
+      }
+    ]
+  },
+  "meta": {
+    "translatedCount": "number - 번역된 세그먼트 수",
+    "processingTime": "number - 처리 시간 (초)"
+  }
+}
+```
+
+**Error Responses**:
+| Status | Code | Message |
+|--------|------|---------|
+| 400 | INVALID_REQUEST | 잘못된 요청 형식입니다 |
+| 400 | SEGMENTS_REQUIRED | 세그먼트 배열이 필요합니다 |
+| 500 | LLM_ERROR | OpenAI API 호출에 실패했습니다 |
+| 429 | RATE_LIMIT_EXCEEDED | 요청 한도를 초과했습니다 |
 
 ---
 
