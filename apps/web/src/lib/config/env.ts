@@ -2,22 +2,17 @@
  * 환경변수 검증 및 설정
  */
 
-import path from "path";
 import { createLogger } from "../logger";
 import { STT } from "../constants";
 
 const logger = createLogger("Env");
 
 interface EnvConfig {
-  OPENAI_API_KEY: string;
   YOUTUBE_API_KEY: string;
   /** NestJS API Gateway URL */
   API_URL: string;
-  /** @deprecated use API_URL instead - AI 서버 직접 호출용 */
+  /** @deprecated use API_URL instead - AI 서버 직접 호출용 (fallback) */
   AI_SERVICE_URL: string;
-  /** @deprecated use API_URL instead */
-  STT_API_URL: string;
-  YT_DLP_PATH: string;
   STT_MAX_DURATION_MINUTES: number;
 }
 
@@ -37,19 +32,14 @@ function validateRequiredEnv(key: string): string {
  */
 export function getEnvConfig(): EnvConfig {
   // API_URL: NestJS API Gateway (권장)
-  // AI_SERVICE_URL: AI 서버 직접 호출 (deprecated)
+  // AI_SERVICE_URL: AI 서버 직접 호출 (deprecated, fallback용)
   const apiUrl = process.env.API_URL || "";
-  const aiServiceUrl = process.env.AI_SERVICE_URL || process.env.STT_API_URL || "";
+  const aiServiceUrl = process.env.AI_SERVICE_URL || "";
 
   return {
-    OPENAI_API_KEY: validateRequiredEnv("OPENAI_API_KEY"),
     YOUTUBE_API_KEY: validateRequiredEnv("YOUTUBE_API_KEY"),
     API_URL: apiUrl,
     AI_SERVICE_URL: aiServiceUrl,
-    STT_API_URL: aiServiceUrl,  // backward compatibility
-    YT_DLP_PATH:
-      process.env.YT_DLP_PATH ||
-      path.join(process.cwd(), "bin", "yt-dlp"),
     STT_MAX_DURATION_MINUTES: parseInt(
       process.env.STT_MAX_DURATION_MINUTES ||
         STT.DEFAULT_MAX_DURATION_MINUTES.toString()
