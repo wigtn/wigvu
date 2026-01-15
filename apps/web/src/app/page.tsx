@@ -15,7 +15,7 @@ import {
   Languages,
   Sparkles,
   Play,
-  Hash,
+  Mic,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -26,24 +26,32 @@ const TOTAL_SLIDES = 3;
 
 const features = [
   {
+    icon: Languages,
+    title: "원문·번역 동시 학습",
+    description:
+      "영어 원문과 한국어 번역이 문장 단위로 매핑되어 동시에 표시됩니다. 맥락이 끊기지 않고 원문의 뉘앙스를 놓치지 않습니다.",
+    keywords: ["문장 매핑", "10개국어+", "맥락 유지"],
+  },
+  {
+    icon: Mic,
+    title: "자동 스크립트 생성",
+    description:
+      "자막이 없는 영상도 STT로 스크립트를 자동 생성합니다. 어떤 영상이든 학습 가능합니다.",
+    keywords: ["STT", "자막 없어도 OK", "자동 생성"],
+  },
+  {
     icon: Sparkles,
-    title: "AI 요약",
-    description: "영상의 핵심 내용을 한눈에 파악할 수 있는 요약본을 제공합니다",
+    title: "AI 요약 & 복습",
+    description:
+      "LLM이 영상 내용을 요약하고 핵심 포인트를 정리합니다. 빠른 복습과 내용 파악에 최적화되었습니다.",
+    keywords: ["LLM 요약", "핵심 정리", "빠른 복습"],
   },
   {
     icon: Play,
-    title: "핵심 장면",
-    description: "중요한 부분만 골라서 바로 해당 타임스탬프로 이동합니다",
-  },
-  {
-    icon: Languages,
-    title: "실시간 자막",
-    description: "영상과 동기화된 자막을 원본/번역 동시에 확인할 수 있습니다",
-  },
-  {
-    icon: Hash,
-    title: "키워드 추출",
-    description: "영상의 주제를 파악할 수 있는 핵심 키워드를 보여줍니다",
+    title: "구간 탐색 & 핵심 장면",
+    description:
+      "중요한 부분을 골라 바로 해당 타임스탬프로 이동합니다. 필요한 구간을 빠르게 찾아 학습하세요.",
+    keywords: ["타임스탬프", "구간 이동", "핵심 장면"],
   },
 ];
 
@@ -814,10 +822,10 @@ export default function Home() {
             <div className="max-w-5xl mx-auto w-full">
               <div className="text-center mb-4 md:mb-8">
                 <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">
-                  이런 것들을 알 수 있어요
+                  외국어 영상, 이제 이해하면서 보세요
                 </h2>
                 <p className="text-sm md:text-base text-muted-foreground">
-                  YouTube 링크 하나로 영상의 모든 것을 파악하세요
+                  원문과 번역을 동시에 보며 맥락을 놓치지 않는 학습
                 </p>
               </div>
 
@@ -849,9 +857,19 @@ export default function Home() {
                           <h3 className="font-semibold text-sm md:text-lg mb-0.5 md:mb-1">
                             {feature.title}
                           </h3>
-                          <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 md:line-clamp-none">
+                          <p className="text-xs md:text-sm text-muted-foreground mb-2 line-clamp-2 md:line-clamp-none">
                             {feature.description}
                           </p>
+                          <div className="flex flex-wrap gap-1 justify-center md:justify-start">
+                            {feature.keywords.map((keyword, i) => (
+                              <span
+                                key={i}
+                                className="text-[10px] md:text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent"
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
