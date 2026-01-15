@@ -74,12 +74,19 @@ export async function analyzeWithAI(
   const result: AIServiceResponse = await response.json();
 
   if (!response.ok || !result.success) {
+    const errorCode = result.error?.code;
     const errorMsg = result.error?.message || `AI Service error: ${response.status}`;
     logger.error("AI 분석 실패", {
       status: response.status,
       error: result.error,
     });
-    throw new Error(errorMsg);
+    
+    // 에러 코드가 있으면 에러 객체에 포함
+    const error = new Error(errorMsg) as Error & { code?: string };
+    if (errorCode) {
+      error.code = errorCode;
+    }
+    throw error;
   }
 
   if (!result.data) {

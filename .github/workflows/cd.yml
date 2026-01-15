@@ -1,35 +1,170 @@
-name: CD - Deploy to GCP
+name: CD - Build & Deploy to GCP
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-          - staging
+      services:
+        description: 'Services to build (comma-separated: web,api,ai or all)'
+        required: false
+        default: 'all'
+        type: string
 
 env:
+  DOCKERHUB_USERNAME: morirokim
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_ZONE: ${{ secrets.GCP_ZONE }}
   GCE_INSTANCE: ${{ secrets.GCE_INSTANCE }}
 
 jobs:
-  # CI 검증 (빌드 테스트)
-  ci:
-    name: CI Validation
-    uses: ./.github/workflows/ci.yml
-
-  # Docker 이미지 빌드 및 GCR 푸시
-  build-and-push:
-    name: Build & Push Images
+  # 변경된 파일 감지
+  detect-changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
-    needs: ci
+    outputs:
+      web: ${{ steps.changes.outputs.web }}
+      api: ${{ steps.changes.outputs.api }}
+      ai: ${{ steps.changes.outputs.ai }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for changes
+        id: changes
+        run: |
+          # Manual trigger with specific services
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            SERVICES="${{ github.event.inputs.services }}"
+            if [ "$SERVICES" == "all" ]; then
+              echo "web=true" >> $GITHUB_OUTPUT
+              echo "api=true" >> $GITHUB_OUTPUT
+              echo "ai=true" >> $GITHUB_OUTPUT
+            else
+              echo "web=$([[ $SERVICES == *web* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+              echo "api=$([[ $SERVICES == *api* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+              echo "ai=$([[ $SERVICES == *ai* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Auto detect changes on push
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+            echo "Changed files: $CHANGED_FILES"
+
+            echo "web=$([[ $CHANGED_FILES == *apps/web/* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "api=$([[ $CHANGED_FILES == *apps/api/* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "ai=$([[ $CHANGED_FILES == *apps/ai/* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          fi
+
+  # Web 이미지 빌드 & Docker Hub 푸시
+  build-web:
+    name: Build & Push Web
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/wigtn-web:latest
+            ${{ env.DOCKERHUB_USERNAME }}/wigtn-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # API 이미지 빌드 & Docker Hub 푸시
+  build-api:
+    name: Build & Push API
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/api
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/wigtn-api:latest
+            ${{ env.DOCKERHUB_USERNAME }}/wigtn-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # AI 이미지 빌드 & Docker Hub 푸시
+  build-ai:
+    name: Build & Push AI
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ai == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push AI image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/ai
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/wigtn-ai:latest
+            ${{ env.DOCKERHUB_USERNAME }}/wigtn-ai:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # GCE 배포
+  deploy:
+    name: Deploy to GCE
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-web, build-api, build-ai]
+    # 빌드 job 중 하나라도 성공하거나 스킵된 경우 실행
+    if: |
+      always() &&
+      (needs.build-web.result == 'success' || needs.build-web.result == 'skipped') &&
+      (needs.build-api.result == 'success' || needs.build-api.result == 'skipped') &&
+      (needs.build-ai.result == 'success' || needs.build-ai.result == 'skipped') &&
+      (needs.build-web.result == 'success' || needs.build-api.result == 'success' || needs.build-ai.result == 'success')
+    environment: production
+
+    # Workload Identity Federation에 필요한 권한
     permissions:
       contents: read
       id-token: write
@@ -38,56 +173,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Workload Identity Federation으로 인증 (서비스 계정 키 불필요)
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker
-
-      - name: Build and push Web image
-        run: |
-          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:${{ github.sha }} \
-            -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:latest \
-            ./apps/web
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:${{ github.sha }}
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-web:latest
-
-      - name: Build and push API image
-        run: |
-          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:${{ github.sha }} \
-            -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:latest \
-            ./apps/api
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:${{ github.sha }}
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-api:latest
-
-      - name: Build and push AI image
-        run: |
-          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:${{ github.sha }} \
-            -t gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:latest \
-            ./apps/ai
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:${{ github.sha }}
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/quickpreview-ai:latest
-
-  # GCE 배포
-  deploy:
-    name: Deploy to GCE
-    runs-on: ubuntu-latest
-    needs: build-and-push
-    environment: production
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -96,12 +187,12 @@ jobs:
         run: |
           gcloud compute ssh ${{ env.GCE_INSTANCE }} \
             --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
             --command="
-              cd /opt/quickpreview && \
+              cd /home/rsa-key-20260115/wigtn-quickpreview && \
               git pull origin main && \
-              gcloud auth configure-docker && \
-              docker compose -f docker-compose.gce.yml pull && \
-              docker compose -f docker-compose.gce.yml up -d --remove-orphans && \
+              docker compose -f docker-compose.hub.yml pull && \
+              docker compose -f docker-compose.hub.yml up -d --remove-orphans && \
               docker system prune -f
             "
 
@@ -110,16 +201,25 @@ jobs:
           sleep 30
           gcloud compute ssh ${{ env.GCE_INSTANCE }} \
             --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
             --command="
               curl -f http://localhost:4000/api/v1/health || exit 1
               curl -f http://localhost:3000 || exit 1
             "
 
-      - name: Deployment notification
+      - name: Deployment summary
         if: always()
         run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Built | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Web | ${{ needs.detect-changes.outputs.web }} | ${{ needs.build-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API | ${{ needs.detect-changes.outputs.api }} | ${{ needs.build-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| AI | ${{ needs.detect-changes.outputs.ai }} | ${{ needs.build-ai.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment successful!"
+            echo "### ✅ Deployment successful!" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Deployment failed!"
+            echo "### ❌ Deployment failed!" >> $GITHUB_STEP_SUMMARY
           fi

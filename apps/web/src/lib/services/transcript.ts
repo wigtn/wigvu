@@ -5,8 +5,23 @@
 
 import { getEnvConfig } from "@/lib/config/env";
 import { createLogger } from "@/lib/logger";
+import { ERROR_CODES } from "@/lib/errors/error-codes";
 
 const logger = createLogger("Transcript");
+
+/**
+ * Transcript 서비스 에러 - 상위 레이어에서 처리
+ */
+export class TranscriptError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly details?: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = "TranscriptError";
+  }
+}
 
 export type TranscriptSource = "youtube" | "stt" | "none";
 
@@ -96,6 +111,25 @@ export async function fetchTranscript(
         status: response.status,
         error: result.error,
       });
+
+      // 에러 코드가 있으면 상위로 전파
+      if (result.error?.code) {
+        throw new TranscriptError(
+          result.error.code,
+          result.error.message || "자막 추출 중 오류가 발생했습니다",
+          { status: response.status }
+        );
+      }
+
+      // 특정 HTTP 상태 코드에 대한 처리
+      if (response.status === 413 || response.status === 422) {
+        throw new TranscriptError(
+          ERROR_CODES.AUDIO_TOO_LONG,
+          "영상이 너무 길어요! 더 짧은 영상을 시도해주세요.",
+          { status: response.status }
+        );
+      }
+
       return { transcript: null, source: "none" };
     }
 
@@ -128,6 +162,15 @@ export async function fetchTranscript(
       },
     };
   } catch (error) {
+    // TranscriptError는 상위로 전파 (AUDIO_TOO_LONG, TRANSCRIPT_TOO_LONG 등)
+    if (error instanceof TranscriptError) {
+      logger.error("자막 추출 실패 - 에러 전파", {
+        code: error.code,
+        message: error.message
+      });
+      throw error;
+    }
+
     logger.error("자막 API 호출 실패", error);
     return { transcript: null, source: "none" };
   }

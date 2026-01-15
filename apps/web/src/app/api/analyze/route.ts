@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { extractVideoId } from "@/lib/youtube";
 import { fetchVideoMetadata } from "@/lib/services/youtube-metadata";
-import { fetchTranscript } from "@/lib/services/transcript";
+import { fetchTranscript, TranscriptError } from "@/lib/services/transcript";
 import { analyzeWithAI } from "@/lib/services/ai-analysis";
-import { translateSegments, needsTranslation } from "@/lib/services/translation";
+import { translateSegments, needsTranslation, TranslationError } from "@/lib/services/translation";
 import { createLogger } from "@/lib/logger";
 import { TranscriptSegment } from "@/types/analysis";
+import { ERROR_CODES } from "@/lib/errors/error-codes";
 
 const logger = createLogger("AnalyzeAPI");
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: ERROR_CODES.INVALID_REQUEST,
             message: firstIssue.message,
           },
         },
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: "INVALID_URL",
+            code: ERROR_CODES.INVALID_URL,
             message: "올바른 YouTube URL을 입력해주세요",
           },
         },
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
           {
             success: false,
             error: {
-              code: "VIDEO_NOT_FOUND",
+              code: ERROR_CODES.VIDEO_NOT_FOUND,
               message: "영상을 찾을 수 없습니다",
             },
           },
@@ -112,6 +113,21 @@ export async function POST(request: NextRequest) {
 
           logger.info("번역 완료", { translatedCount: translatedSegments.length });
         } catch (error) {
+          // TranslationError인 경우 에러 코드 확인
+          if (error instanceof TranslationError) {
+            // 치명적인 에러는 전파 (TRANSCRIPT_TOO_LONG 등)
+            const fatalErrors: string[] = [
+              ERROR_CODES.TRANSCRIPT_TOO_LONG,
+              ERROR_CODES.RATE_LIMIT_EXCEEDED,
+              ERROR_CODES.SERVICE_UNAVAILABLE,
+            ];
+            
+            if (fatalErrors.includes(error.code)) {
+              logger.error("번역 실패 - 치명적 에러", { code: error.code });
+              throw error; // 에러 전파
+            }
+          }
+          
           logger.error("번역 실패, 원본 사용", error);
           // 번역 실패 시 원본 세그먼트 사용
           translatedSegments = segments.map((seg) => ({
@@ -162,15 +178,170 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error("Analysis error", error);
+
+    // TranscriptError 처리 (자막 추출 중 발생한 에러)
+    if (error instanceof TranscriptError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+          },
+        },
+        { status: getStatusCodeForErrorCode(error.code) }
+      );
+    }
+
+    // TranslationError 처리 (번역 중 발생한 에러)
+    if (error instanceof TranslationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+          },
+        },
+        { status: getStatusCodeForErrorCode(error.code) }
+      );
+    }
+
+    // 백엔드 에러 코드를 그대로 전달
+    if (error instanceof Error) {
+      // 에러 객체에 code 속성이 있으면 사용 (ai-analysis.ts에서 설정)
+      const errorWithCode = error as Error & { code?: string };
+      if (errorWithCode.code && typeof errorWithCode.code === 'string') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: errorWithCode.code,
+              message: error.message,
+            },
+          },
+          { status: getStatusCodeForErrorCode(errorWithCode.code) }
+        );
+      }
+
+      // 에러 메시지에서 코드 추출 시도 (예: "VIDEO_TOO_LONG: ...")
+      const errorMessage = error.message;
+
+      // 타임아웃 에러 감지
+      if (errorMessage.toLowerCase().includes('timeout') || errorMessage.includes('시간 초과')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.PROCESSING_TIMEOUT,
+              message: errorMessage,
+            },
+          },
+          { status: 408 }
+        );
+      }
+
+      // 영상 길이 초과 에러 감지
+      if (errorMessage.includes('VIDEO_TOO_LONG') || errorMessage.includes('영상 길이')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.VIDEO_TOO_LONG,
+              message: errorMessage,
+            },
+          },
+          { status: 400 }
+        );
+      }
+
+      // 오디오 길이 초과 에러 감지
+      if (errorMessage.includes('AUDIO_TOO_LONG') || errorMessage.includes('오디오')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.AUDIO_TOO_LONG,
+              message: errorMessage,
+            },
+          },
+          { status: 422 }
+        );
+      }
+
+      // 자막 텍스트 초과 에러 감지
+      if (errorMessage.includes('TRANSCRIPT_TOO_LONG') || errorMessage.includes('텍스트가 너무')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.TRANSCRIPT_TOO_LONG,
+              message: errorMessage,
+            },
+          },
+          { status: 400 }
+        );
+      }
+
+      // Rate limit 에러 감지
+      if (errorMessage.includes('RATE_LIMIT') || errorMessage.includes('요청 한도')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
+              message: errorMessage,
+            },
+          },
+          { status: 429 }
+        );
+      }
+
+      // 서비스 불가 에러 감지
+      if (errorMessage.includes('SERVICE_UNAVAILABLE') || errorMessage.includes('일시적으로')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.SERVICE_UNAVAILABLE,
+              message: errorMessage,
+            },
+          },
+          { status: 503 }
+        );
+      }
+    }
+
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: "INTERNAL_ERROR",
+          code: ERROR_CODES.INTERNAL_ERROR,
           message: "분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
         },
       },
       { status: 500 }
     );
   }
+}
+
+/**
+ * 에러 코드에 따른 HTTP 상태 코드 매핑
+ */
+function getStatusCodeForErrorCode(code: string): number {
+  const statusMap: Record<string, number> = {
+    [ERROR_CODES.VIDEO_TOO_LONG]: 400,
+    [ERROR_CODES.AUDIO_TOO_LONG]: 422,
+    [ERROR_CODES.TRANSCRIPT_TOO_LONG]: 400,
+    [ERROR_CODES.PROCESSING_TIMEOUT]: 408,
+    [ERROR_CODES.RATE_LIMIT_EXCEEDED]: 429,
+    [ERROR_CODES.SERVICE_UNAVAILABLE]: 503,
+    [ERROR_CODES.STT_UNAVAILABLE]: 503,
+    [ERROR_CODES.INVALID_URL]: 400,
+    [ERROR_CODES.VIDEO_NOT_FOUND]: 404,
+    [ERROR_CODES.NO_TRANSCRIPT]: 422,
+  };
+  return statusMap[code] || 500;
 }

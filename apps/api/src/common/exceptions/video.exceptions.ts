@@ -78,3 +78,35 @@ export class SttUnavailableException extends HttpException {
     );
   }
 }
+
+/**
+ * 오디오 길이 초과 예외 (STT 제한)
+ */
+export class AudioTooLongException extends HttpException {
+  constructor(message?: string, details?: Record<string, unknown>) {
+    super(
+      {
+        code: 'AUDIO_TOO_LONG',
+        message: message || '음성 인식은 짧은 영상만 지원해요. 자막이 있는 영상을 추천드려요!',
+        details,
+      },
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
+  }
+}
+
+/**
+ * 자막 텍스트 초과 예외
+ */
+export class TranscriptTooLongException extends HttpException {
+  constructor(message?: string, details?: Record<string, unknown>) {
+    super(
+      {
+        code: 'TRANSCRIPT_TOO_LONG',
+        message: message || '자막이 너무 길어서 처리할 수 없어요. 더 짧은 영상으로 시도해주세요.',
+        details,
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}

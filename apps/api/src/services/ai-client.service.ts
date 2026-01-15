@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import {
+  AudioTooLongException,
+  TranscriptTooLongException,
+} from '../common/exceptions/video.exceptions';
 
 // Types for AI Service
 export interface TranslationSegment {
@@ -139,6 +143,21 @@ export class AiClientService {
       this.onSuccess();
       return response.data;
     } catch (error) {
+      // TRANSCRIPT_TOO_LONG 에러 시 exception throw
+      if (error instanceof AxiosError && error.response) {
+        const data = error.response.data as {
+          success?: boolean;
+          error?: { code?: string; message?: string; details?: Record<string, unknown> };
+        };
+
+        if (data?.error?.code === 'TRANSCRIPT_TOO_LONG') {
+          throw new TranscriptTooLongException(
+            data.error.message,
+            data.error.details,
+          );
+        }
+      }
+
       this.onFailure(error);
       return null;
     }
@@ -160,6 +179,21 @@ export class AiClientService {
       this.onSuccess();
       return response.data;
     } catch (error) {
+      // TRANSCRIPT_TOO_LONG 에러 시 exception throw
+      if (error instanceof AxiosError && error.response) {
+        const data = error.response.data as {
+          success?: boolean;
+          error?: { code?: string; message?: string; details?: Record<string, unknown> };
+        };
+
+        if (data?.error?.code === 'TRANSCRIPT_TOO_LONG') {
+          throw new TranscriptTooLongException(
+            data.error.message,
+            data.error.details,
+          );
+        }
+      }
+
       this.onFailure(error);
       return null;
     }
@@ -358,6 +392,49 @@ export class AiClientService {
       this.logger.error(
         `STT from video failed for ${videoId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
+
+      // 422 에러 (AUDIO_TOO_LONG) 시 exception throw
+      if (error instanceof AxiosError && error.response) {
+        const status = error.response.status;
+        const data = error.response.data as {
+          // Standard format
+          success?: boolean;
+          error?: { code?: string; message?: string; details?: Record<string, unknown> } | string;
+          // Flat format (STT endpoints)
+          message?: string;
+        };
+
+        // 에러 코드와 메시지 추출 (두 가지 형식 모두 지원)
+        let errorCode: string | undefined;
+        let errorMessage: string | undefined;
+        let errorDetails: Record<string, unknown> | undefined;
+
+        if (typeof data?.error === 'object' && data.error?.code) {
+          // Standard format: { success: false, error: { code, message } }
+          errorCode = data.error.code;
+          errorMessage = data.error.message;
+          errorDetails = data.error.details;
+        } else if (typeof data?.error === 'string') {
+          // Flat format: { error: "CODE", message: "..." }
+          errorCode = data.error;
+          errorMessage = data.message;
+        }
+
+        this.logger.warn(
+          `STT error response: status=${status}, code=${errorCode}, message=${errorMessage}`,
+        );
+
+        // AUDIO_TOO_LONG 에러
+        if (status === 422 || errorCode === 'AUDIO_TOO_LONG') {
+          throw new AudioTooLongException(errorMessage, errorDetails);
+        }
+
+        // TRANSCRIPT_TOO_LONG 에러
+        if (errorCode === 'TRANSCRIPT_TOO_LONG') {
+          throw new TranscriptTooLongException(errorMessage, errorDetails);
+        }
+      }
+
       this.onFailure(error);
       return null;
     }
