@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
 import { LoadingState } from "@/components/loading-state";
@@ -18,9 +19,10 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  FlaskConical,
 } from "lucide-react";
 
-const TOTAL_SLIDES = 4;
+const TOTAL_SLIDES = 3;
 
 const features = [
   {
@@ -71,27 +73,67 @@ export default function Home() {
   const router = useRouter();
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [testLoading, setTestLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  const goToSlide = useCallback((index: number) => {
-    setCurrentSlide(index);
+  // 무한 캐러셀: 실제 슬라이드 + 앞뒤 클론
+  // [클론-마지막] [0] [1] [2] [클론-첫번째]
+  // 인덱스:  0      1   2   3      4
+
+  const scrollToIndex = useCallback((index: number, smooth = true) => {
     carouselRef.current?.scrollTo({
       left: index * window.innerWidth,
-      behavior: "smooth",
+      behavior: smooth ? "smooth" : "instant",
     });
   }, []);
 
+  const goToSlide = useCallback((index: number) => {
+    if (isTransitioning) return;
+    setCurrentSlide(index);
+    scrollToIndex(index + 1); // 클론 오프셋
+  }, [isTransitioning, scrollToIndex]);
+
   const nextSlide = useCallback(() => {
-    if (currentSlide < TOTAL_SLIDES - 1) {
-      goToSlide(currentSlide + 1);
+    if (isTransitioning) return;
+
+    if (currentSlide === TOTAL_SLIDES - 1) {
+      // 마지막 → 클론(첫번째)로 스크롤 후 실제 첫번째로 점프
+      setIsTransitioning(true);
+      scrollToIndex(TOTAL_SLIDES + 1); // 클론-첫번째 위치
+      setTimeout(() => {
+        scrollToIndex(1, false); // 실제 첫번째로 즉시 점프
+        setCurrentSlide(0);
+        setIsTransitioning(false);
+      }, 500);
+    } else {
+      setCurrentSlide(currentSlide + 1);
+      scrollToIndex(currentSlide + 2);
     }
-  }, [currentSlide, goToSlide]);
+  }, [currentSlide, isTransitioning, scrollToIndex]);
 
   const prevSlide = useCallback(() => {
-    if (currentSlide > 0) {
-      goToSlide(currentSlide - 1);
+    if (isTransitioning) return;
+
+    if (currentSlide === 0) {
+      // 첫번째 → 클론(마지막)으로 스크롤 후 실제 마지막으로 점프
+      setIsTransitioning(true);
+      scrollToIndex(0); // 클론-마지막 위치
+      setTimeout(() => {
+        scrollToIndex(TOTAL_SLIDES, false); // 실제 마지막으로 즉시 점프
+        setCurrentSlide(TOTAL_SLIDES - 1);
+        setIsTransitioning(false);
+      }, 500);
+    } else {
+      setCurrentSlide(currentSlide - 1);
+      scrollToIndex(currentSlide);
     }
-  }, [currentSlide, goToSlide]);
+  }, [currentSlide, isTransitioning, scrollToIndex]);
+
+  // 초기 위치 설정 (클론 오프셋)
+  useEffect(() => {
+    scrollToIndex(1, false);
+  }, [scrollToIndex]);
 
   // 키보드 네비게이션
   useEffect(() => {
@@ -103,34 +145,22 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nextSlide, prevSlide]);
 
-  // 스크롤 위치 동기화
+  // 자동 슬라이드 (5초마다, 무한 루프)
   useEffect(() => {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-
-    const handleScroll = () => {
-      const scrollLeft = carousel.scrollLeft;
-      const slideWidth = window.innerWidth;
-      const newSlide = Math.round(scrollLeft / slideWidth);
-      if (newSlide !== currentSlide) {
-        setCurrentSlide(newSlide);
-      }
-    };
-
-    carousel.addEventListener("scroll", handleScroll);
-    return () => carousel.removeEventListener("scroll", handleScroll);
-  }, [currentSlide]);
-
-  // 자동 슬라이드 (2초마다, 마지막 슬라이드 제외)
-  useEffect(() => {
-    if (currentSlide >= TOTAL_SLIDES - 1) return;
+    if (isTransitioning) return;
 
     const timer = setInterval(() => {
-      goToSlide(currentSlide + 1);
-    }, 100000);
+      nextSlide();
+    }, 5000);
 
     return () => clearInterval(timer);
-  }, [currentSlide, goToSlide]);
+  }, [isTransitioning, nextSlide]);
+
+  // URL 입력 섹션으로 스크롤
+  const scrollToInput = useCallback(() => {
+    const inputSection = document.getElementById("url-input-section");
+    inputSection?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   const mutation = useMutation({
     mutationFn: analyzeVideo,
@@ -148,11 +178,19 @@ export default function Home() {
     mutation.reset();
   };
 
-  // 로딩 중
-  if (mutation.isPending) {
+  // 로딩 중 (실제 또는 테스트)
+  if (mutation.isPending || testLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
         <LoadingState />
+        {testLoading && (
+          <button
+            onClick={() => setTestLoading(false)}
+            className="btn-ghost text-sm"
+          >
+            테스트 종료
+          </button>
+        )}
       </div>
     );
   }
@@ -178,58 +216,87 @@ export default function Home() {
     );
   }
 
-  // 초기 상태: 랜딩 페이지 (가로 캐러셀)
+  // 초기 상태: 랜딩 페이지 (가로 캐러셀 + 스크롤 URL 입력)
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-y-auto">
       {/* Header - 고정 */}
-      <header className="shrink-0 px-6 py-4 bg-background/80 backdrop-blur-sm border-b border-border z-50">
+      <header className="fixed top-0 left-0 right-0 shrink-0 px-6 py-4 bg-background/80 backdrop-blur-sm border-b border-border z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-accent" />
             <span className="font-bold text-lg">WIGTN</span>
           </div>
-          {/* <button
-            onClick={() => goToSlide(TOTAL_SLIDES - 1)}
-            className="btn-primary px-4 py-2 text-sm"
+          {/* 테스트 버튼 (개발용) */}
+          <button
+            onClick={() => setTestLoading(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-md hover:border-accent transition-colors"
+            title="로딩 테스트"
           >
-            시작하기
-          </button> */}
+            <FlaskConical className="w-4 h-4" />
+            <span className="hidden sm:inline">로딩 테스트</span>
+          </button>
         </div>
       </header>
 
       {/* 캐러셀 컨테이너 */}
-      <div
-        ref={carouselRef}
-        className="flex-1 flex overflow-x-auto snap-x snap-mandatory"
-        style={{
-          scrollBehavior: "smooth",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
-      >
-        {/* Slide 1: Hero */}
-        <section className="relative w-screen h-full shrink-0 snap-start flex flex-col items-center justify-center px-6">
-          <div className="max-w-4xl mx-auto w-full">
-            {/* 타이틀 */}
-            <div className="text-center mb-6">
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                YouTube 영상, 빠르게 파악하세요
-              </h1>
-              <p className="text-muted-foreground text-lg">
-                URL 하나로 AI가 핵심 내용을 분석해드립니다
-              </p>
+      <div className="h-screen shrink-0 relative pt-16">
+        <div
+          ref={carouselRef}
+          className="h-full flex overflow-x-hidden"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
+          {/* Clone: Slide 3 (Steps) - 앞쪽 클론 */}
+          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6">
+            <div className="max-w-4xl mx-auto w-full">
+              <div className="text-center mb-6 md:mb-12">
+                <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">사용 방법</h2>
+                <p className="text-sm md:text-base text-muted-foreground">3단계로 간단하게</p>
+              </div>
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+                {steps.map((step, index) => (
+                  <div key={index} className="flex items-center md:items-start gap-3 md:gap-4">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-14 h-14 md:w-20 md:h-20 rounded-xl md:rounded-2xl bg-foreground text-background flex items-center justify-center font-bold text-xl md:text-3xl mb-2 md:mb-4">
+                        {step.number}
+                      </div>
+                      <h3 className="font-semibold text-base md:text-lg mb-1 md:mb-2">{step.title}</h3>
+                      <p className="text-xs md:text-sm text-muted-foreground max-w-32 md:max-w-37.5">{step.description}</p>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <ArrowRight className="hidden md:block w-6 h-6 text-muted-foreground shrink-0 mt-7" />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
+          </section>
 
-            {/* SVG 일러스트 - URL 입력 → 분석 결과 변환 애니메이션 */}
-            <svg
-              viewBox="0 0 800 500"
-              className="w-full max-w-3xl h-auto mx-auto"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <style>
-                  {`
+          {/* Slide 1: Hero */}
+          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6">
+            <div className="max-w-4xl mx-auto w-full">
+              {/* 타이틀 */}
+              <div className="text-center mb-4 md:mb-6">
+                <h1 className="text-2xl md:text-4xl font-bold mb-2">
+                  YouTube 영상, 빠르게 파악하세요
+                </h1>
+                <p className="text-muted-foreground text-sm md:text-lg">
+                  URL 하나로 AI가 핵심 내용을 분석해드립니다
+                </p>
+              </div>
+
+              {/* SVG 일러스트 - URL 입력 → 분석 결과 변환 애니메이션 */}
+              <svg
+                viewBox="0 0 800 500"
+                className="w-full max-w-3xl h-auto mx-auto hidden md:block"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <defs>
+                  <style>
+                    {`
                   /*
                    * 타임라인 (10초 사이클):
                    * 0-30%: URL 입력 + 타이핑
@@ -370,533 +437,539 @@ export default function Home() {
                   .float-r1 { animation: rotate1 4s ease-in-out infinite; transform-origin: 70px 130px; }
                   .float-r2 { animation: rotate2 5s ease-in-out infinite; transform-origin: 738px 308px; }
                 `}
-                </style>
-              </defs>
+                  </style>
+                </defs>
 
-              {/* 장식: 플로팅 요소들 */}
-              <circle
-                className="float-c1"
-                cx="720"
-                cy="100"
-                r="30"
-                fill="var(--accent)"
-                opacity="0.15"
-              />
-              <circle
-                className="float-c2"
-                cx="80"
-                cy="380"
-                r="25"
-                fill="var(--accent)"
-                opacity="0.15"
-              />
-              <rect
-                className="float-r1"
-                x="60"
-                y="120"
-                width="20"
-                height="20"
-                rx="4"
-                fill="var(--accent)"
-                opacity="0.2"
-              />
-              <rect
-                className="float-r2"
-                x="730"
-                y="300"
-                width="16"
-                height="16"
-                rx="3"
-                fill="var(--accent)"
-                opacity="0.2"
-              />
-
-              {/* 모니터 그룹 - 전체 플로팅 */}
-              <g className="monitor-group">
-                {/* 모니터 스탠드 */}
+                {/* 장식: 플로팅 요소들 */}
+                <circle
+                  className="float-c1"
+                  cx="720"
+                  cy="100"
+                  r="30"
+                  fill="var(--accent)"
+                  opacity="0.15"
+                />
+                <circle
+                  className="float-c2"
+                  cx="80"
+                  cy="380"
+                  r="25"
+                  fill="var(--accent)"
+                  opacity="0.15"
+                />
                 <rect
-                  x="350"
-                  y="420"
-                  width="100"
+                  className="float-r1"
+                  x="60"
+                  y="120"
+                  width="20"
                   height="20"
                   rx="4"
-                  fill="var(--muted)"
+                  fill="var(--accent)"
+                  opacity="0.2"
                 />
                 <rect
-                  x="320"
-                  y="440"
-                  width="160"
-                  height="12"
-                  rx="6"
-                  fill="var(--muted)"
+                  className="float-r2"
+                  x="730"
+                  y="300"
+                  width="16"
+                  height="16"
+                  rx="3"
+                  fill="var(--accent)"
+                  opacity="0.2"
                 />
 
-                {/* 모니터 외곽 */}
-                <rect
-                  x="100"
-                  y="40"
-                  width="600"
-                  height="380"
-                  rx="16"
-                  fill="var(--card)"
-                  stroke="var(--border)"
-                  strokeWidth="2"
-                />
-
-                {/* 모니터 화면 */}
-                <rect
-                  x="120"
-                  y="60"
-                  width="560"
-                  height="340"
-                  rx="8"
-                  fill="var(--background)"
-                />
-
-                {/* URL 입력 화면 (초기 상태) */}
-                <g className="url-input-screen">
-                  {/* 중앙 URL 입력바 */}
+                {/* 모니터 그룹 - 전체 플로팅 */}
+                <g className="monitor-group">
+                  {/* 모니터 스탠드 */}
                   <rect
-                    x="200"
-                    y="190"
-                    width="400"
-                    height="50"
-                    rx="25"
+                    x="350"
+                    y="420"
+                    width="100"
+                    height="20"
+                    rx="4"
                     fill="var(--muted)"
-                    opacity="0.3"
                   />
                   <rect
-                    x="200"
-                    y="190"
-                    width="400"
-                    height="50"
-                    rx="25"
-                    fill="none"
-                    stroke="var(--accent)"
-                    strokeWidth="2"
-                    opacity="0.5"
-                  />
-                  {/* URL 텍스트 (글자별 타이핑 효과) */}
-                  <text
-                    x="225"
-                    y="222"
-                    fill="var(--foreground)"
-                    fontSize="14"
-                    fontFamily="ui-monospace, monospace"
-                  >
-                    {"https://youtube.com/watch?v=abc123"
-                      .split("")
-                      .map((char, i) => (
-                        <tspan key={i} className={`char char-${i}`}>
-                          {char}
-                        </tspan>
-                      ))}
-                  </text>
-                  {/* 깜빡이는 커서 */}
-                  <rect
-                    className="url-cursor"
-                    x="225"
-                    y="207"
-                    width="2"
-                    height="18"
-                    fill="var(--accent)"
-                  />
-                </g>
-
-                {/* 로딩 스피너 */}
-                <circle
-                  className="loader"
-                  cx="400"
-                  cy="220"
-                  r="20"
-                  fill="none"
-                  stroke="var(--accent)"
-                  strokeWidth="3"
-                  strokeDasharray="80"
-                  strokeDashoffset="60"
-                  strokeLinecap="round"
-                />
-
-                {/* === 분석 결과 화면 (페이드인) === */}
-
-                {/* 헤더 바 */}
-                <g className="header-area">
-                  <rect
-                    x="120"
-                    y="60"
-                    width="560"
-                    height="40"
-                    rx="8"
-                    fill="var(--background-elevated, var(--muted))"
-                  />
-                  <circle cx="145" cy="80" r="6" fill="var(--accent)" />
-                  <rect
-                    x="160"
-                    y="74"
-                    width="80"
-                    height="12"
-                    rx="2"
-                    fill="var(--foreground)"
-                    opacity="0.8"
-                  />
-                  <rect
-                    x="500"
-                    y="74"
+                    x="320"
+                    y="440"
                     width="160"
                     height="12"
                     rx="6"
                     fill="var(--muted)"
                   />
-                </g>
 
-                {/* 왼쪽: 비디오 플레이어 */}
-                <g className="video-area">
+                  {/* 모니터 외곽 */}
                   <rect
-                    x="140"
-                    y="115"
-                    width="280"
-                    height="160"
+                    x="100"
+                    y="40"
+                    width="600"
+                    height="380"
+                    rx="16"
+                    fill="var(--card)"
+                    stroke="var(--border)"
+                    strokeWidth="2"
+                  />
+
+                  {/* 모니터 화면 */}
+                  <rect
+                    x="120"
+                    y="60"
+                    width="560"
+                    height="340"
                     rx="8"
-                    fill="var(--foreground)"
-                    opacity="0.1"
+                    fill="var(--background)"
                   />
-                  <polygon
-                    className="play-btn"
-                    points="280,175 280,215 310,195"
-                    fill="var(--accent)"
+
+                  {/* URL 입력 화면 (초기 상태) */}
+                  <g className="url-input-screen">
+                    {/* 중앙 URL 입력바 */}
+                    <rect
+                      x="200"
+                      y="190"
+                      width="400"
+                      height="50"
+                      rx="25"
+                      fill="var(--muted)"
+                      opacity="0.3"
+                    />
+                    <rect
+                      x="200"
+                      y="190"
+                      width="400"
+                      height="50"
+                      rx="25"
+                      fill="none"
+                      stroke="var(--accent)"
+                      strokeWidth="2"
+                      opacity="0.5"
+                    />
+                    {/* URL 텍스트 (글자별 타이핑 효과) */}
+                    <text
+                      x="225"
+                      y="222"
+                      fill="var(--foreground)"
+                      fontSize="14"
+                      fontFamily="ui-monospace, monospace"
+                    >
+                      {"https://youtube.com/watch?v=abc123"
+                        .split("")
+                        .map((char, i) => (
+                          <tspan key={i} className={`char char-${i}`}>
+                            {char}
+                          </tspan>
+                        ))}
+                    </text>
+                    {/* 깜빡이는 커서 */}
+                    <rect
+                      className="url-cursor"
+                      x="225"
+                      y="207"
+                      width="2"
+                      height="18"
+                      fill="var(--accent)"
+                    />
+                  </g>
+
+                  {/* 로딩 스피너 */}
+                  <circle
+                    className="loader"
+                    cx="400"
+                    cy="220"
+                    r="20"
+                    fill="none"
+                    stroke="var(--accent)"
+                    strokeWidth="3"
+                    strokeDasharray="80"
+                    strokeDashoffset="60"
+                    strokeLinecap="round"
                   />
+
+                  {/* === 분석 결과 화면 (페이드인) === */}
+
+                  {/* 헤더 바 */}
+                  <g className="header-area">
+                    <rect
+                      x="120"
+                      y="60"
+                      width="560"
+                      height="40"
+                      rx="8"
+                      fill="var(--background-elevated, var(--muted))"
+                    />
+                    <circle cx="145" cy="80" r="6" fill="var(--accent)" />
+                    <rect
+                      x="160"
+                      y="74"
+                      width="80"
+                      height="12"
+                      rx="2"
+                      fill="var(--foreground)"
+                      opacity="0.8"
+                    />
+                    <rect
+                      x="500"
+                      y="74"
+                      width="160"
+                      height="12"
+                      rx="6"
+                      fill="var(--muted)"
+                    />
+                  </g>
+
+                  {/* 왼쪽: 비디오 플레이어 */}
+                  <g className="video-area">
+                    <rect
+                      x="140"
+                      y="115"
+                      width="280"
+                      height="160"
+                      rx="8"
+                      fill="var(--foreground)"
+                      opacity="0.1"
+                    />
+                    <polygon
+                      className="play-btn"
+                      points="280,175 280,215 310,195"
+                      fill="var(--accent)"
+                    />
+                  </g>
+
+                  {/* 왼쪽: 영상 제목 */}
+                  <g className="title-area">
+                    <rect
+                      x="140"
+                      y="285"
+                      width="200"
+                      height="14"
+                      rx="2"
+                      fill="var(--foreground)"
+                      opacity="0.7"
+                    />
+                    <rect
+                      x="140"
+                      y="305"
+                      width="120"
+                      height="10"
+                      rx="2"
+                      fill="var(--muted-foreground)"
+                      opacity="0.5"
+                    />
+                  </g>
+
+                  {/* 오른쪽: 스크립트 패널 */}
+                  <g className="script-area">
+                    <rect
+                      x="440"
+                      y="115"
+                      width="220"
+                      height="200"
+                      rx="8"
+                      fill="var(--background-elevated, var(--muted))"
+                      opacity="0.5"
+                    />
+                    <rect
+                      className="line1"
+                      x="455"
+                      y="130"
+                      width="190"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line2"
+                      x="455"
+                      y="145"
+                      width="170"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line3"
+                      x="455"
+                      y="160"
+                      width="185"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line4"
+                      x="455"
+                      y="175"
+                      width="160"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line5"
+                      x="455"
+                      y="190"
+                      width="180"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line6"
+                      x="455"
+                      y="205"
+                      width="175"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line7"
+                      x="455"
+                      y="220"
+                      width="165"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line8"
+                      x="455"
+                      y="235"
+                      width="190"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="line9"
+                      x="455"
+                      y="250"
+                      width="155"
+                      height="8"
+                      rx="2"
+                      fill="var(--accent)"
+                    />
+                  </g>
+
+                  {/* 하단: 키워드 태그들 */}
+                  <g className="tags-area">
+                    <rect
+                      x="140"
+                      y="335"
+                      width="520"
+                      height="50"
+                      rx="8"
+                      fill="var(--background-elevated, var(--muted))"
+                      opacity="0.5"
+                    />
+                    <rect
+                      className="tag1"
+                      x="155"
+                      y="350"
+                      width="60"
+                      height="20"
+                      rx="10"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="tag2"
+                      x="225"
+                      y="350"
+                      width="50"
+                      height="20"
+                      rx="10"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="tag3"
+                      x="285"
+                      y="350"
+                      width="70"
+                      height="20"
+                      rx="10"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="tag4"
+                      x="365"
+                      y="350"
+                      width="55"
+                      height="20"
+                      rx="10"
+                      fill="var(--accent)"
+                    />
+                    <rect
+                      className="tag5"
+                      x="430"
+                      y="350"
+                      width="65"
+                      height="20"
+                      rx="10"
+                      fill="var(--accent)"
+                    />
+                  </g>
                 </g>
+              </svg>
 
-                {/* 왼쪽: 영상 제목 */}
-                <g className="title-area">
-                  <rect
-                    x="140"
-                    y="285"
-                    width="200"
-                    height="14"
-                    rx="2"
-                    fill="var(--foreground)"
-                    opacity="0.7"
-                  />
-                  <rect
-                    x="140"
-                    y="305"
-                    width="120"
-                    height="10"
-                    rx="2"
-                    fill="var(--muted-foreground)"
-                    opacity="0.5"
-                  />
-                </g>
-
-                {/* 오른쪽: 스크립트 패널 */}
-                <g className="script-area">
-                  <rect
-                    x="440"
-                    y="115"
-                    width="220"
-                    height="200"
-                    rx="8"
-                    fill="var(--background-elevated, var(--muted))"
-                    opacity="0.5"
-                  />
-                  <rect
-                    className="line1"
-                    x="455"
-                    y="130"
-                    width="190"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line2"
-                    x="455"
-                    y="145"
-                    width="170"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line3"
-                    x="455"
-                    y="160"
-                    width="185"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line4"
-                    x="455"
-                    y="175"
-                    width="160"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line5"
-                    x="455"
-                    y="190"
-                    width="180"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line6"
-                    x="455"
-                    y="205"
-                    width="175"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line7"
-                    x="455"
-                    y="220"
-                    width="165"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line8"
-                    x="455"
-                    y="235"
-                    width="190"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="line9"
-                    x="455"
-                    y="250"
-                    width="155"
-                    height="8"
-                    rx="2"
-                    fill="var(--accent)"
-                  />
-                </g>
-
-                {/* 하단: 키워드 태그들 */}
-                <g className="tags-area">
-                  <rect
-                    x="140"
-                    y="335"
-                    width="520"
-                    height="50"
-                    rx="8"
-                    fill="var(--background-elevated, var(--muted))"
-                    opacity="0.5"
-                  />
-                  <rect
-                    className="tag1"
-                    x="155"
-                    y="350"
-                    width="60"
-                    height="20"
-                    rx="10"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="tag2"
-                    x="225"
-                    y="350"
-                    width="50"
-                    height="20"
-                    rx="10"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="tag3"
-                    x="285"
-                    y="350"
-                    width="70"
-                    height="20"
-                    rx="10"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="tag4"
-                    x="365"
-                    y="350"
-                    width="55"
-                    height="20"
-                    rx="10"
-                    fill="var(--accent)"
-                  />
-                  <rect
-                    className="tag5"
-                    x="430"
-                    y="350"
-                    width="65"
-                    height="20"
-                    rx="10"
-                    fill="var(--accent)"
-                  />
-                </g>
-              </g>
-            </svg>
-
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center">
-              <button
-                onClick={() => goToSlide(TOTAL_SLIDES - 1)}
-                className="btn-primary px-8 py-3 text-base"
-              >
-                지금 시작하기
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Slide 2: Features */}
-        <section className="relative w-screen h-full shrink-0 snap-start flex flex-col items-center justify-center px-6 bg-(--background-elevated)">
-          <div className="max-w-5xl mx-auto w-full">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                이런 것들을 알 수 있어요
-              </h2>
-              <p className="text-muted-foreground">
-                YouTube 링크 하나로 영상의 모든 것을 파악하세요
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {features.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <div
-                    key={index}
-                    onMouseEnter={() => setHoveredFeature(index)}
-                    onMouseLeave={() => setHoveredFeature(null)}
-                    className={`bento-card p-6 cursor-default transition-all duration-300 ${
-                      hoveredFeature === index
-                        ? "border-accent/50 bg-accent/5 scale-[1.02] shadow-lg shadow-accent/10"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
-                          hoveredFeature === index
-                            ? "bg-accent text-background scale-110"
-                            : "bg-accent/10 text-accent"
-                        }`}
-                      >
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg mb-1">
-                          {feature.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {feature.description}
-                        </p>
-                      </div>
-                    </div>
+              {/* 모바일용 간단한 일러스트 */}
+              <div className="md:hidden flex flex-col items-center gap-4 py-8">
+                <div className="w-full max-w-xs bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 rounded-full bg-destructive/50" />
+                    <div className="w-3 h-3 rounded-full bg-warning/50" />
+                    <div className="w-3 h-3 rounded-full bg-success/50" />
                   </div>
-                );
-              })}
-            </div>
-
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center">
-              <button
-                onClick={() => goToSlide(TOTAL_SLIDES - 1)}
-                className="btn-primary px-8 py-3 text-base"
-              >
-                지금 시작하기
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Slide 3: Steps */}
-        <section className="relative w-screen h-full shrink-0 snap-start flex flex-col items-center justify-center px-6">
-          <div className="max-w-4xl mx-auto w-full">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">사용 방법</h2>
-              <p className="text-muted-foreground">3단계로 간단하게</p>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-4">
-              {steps.map((step, index) => (
-                <div key={index} className="flex items-start gap-4 md:gap-4">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-20 h-20 rounded-2xl bg-foreground text-background flex items-center justify-center font-bold text-3xl mb-4 transition-transform hover:scale-110">
-                      {step.number}
-                    </div>
-                    <h3 className="font-semibold text-lg mb-2">{step.title}</h3>
-                    <p className="text-sm text-muted-foreground max-w-37.5">
-                      {step.description}
-                    </p>
+                  <div className="bg-muted rounded-full px-4 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                    <span className="truncate">youtube.com/watch?v=...</span>
+                    <div className="w-1.5 h-4 bg-accent animate-pulse rounded-sm" />
                   </div>
-                  {index < steps.length - 1 && (
-                    <ArrowRight className="hidden md:block w-6 h-6 text-muted-foreground shrink-0 mt-7" />
-                  )}
                 </div>
-              ))}
+                <ArrowRight className="w-5 h-5 text-accent rotate-90" />
+                <div className="flex gap-2">
+                  <div className="bg-accent/20 text-accent text-xs px-3 py-1 rounded-full">AI 요약</div>
+                  <div className="bg-accent/20 text-accent text-xs px-3 py-1 rounded-full">핵심장면</div>
+                  <div className="bg-accent/20 text-accent text-xs px-3 py-1 rounded-full">키워드</div>
+                </div>
+              </div>
+
             </div>
+          </section>
 
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center">
-              <button
-                onClick={() => goToSlide(TOTAL_SLIDES - 1)}
-                className="btn-primary px-8 py-3 text-base "
-              >
-                지금 시작하기
-                <ArrowRight className="w-4 h-4" />
-              </button>
+          {/* Slide 2: Features */}
+          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6 bg-(--background-elevated)">
+            <div className="max-w-5xl mx-auto w-full">
+              <div className="text-center mb-4 md:mb-8">
+                <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">
+                  이런 것들을 알 수 있어요
+                </h2>
+                <p className="text-sm md:text-base text-muted-foreground">
+                  YouTube 링크 하나로 영상의 모든 것을 파악하세요
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
+                {features.map((feature, index) => {
+                  const Icon = feature.icon;
+                  return (
+                    <div
+                      key={index}
+                      onMouseEnter={() => setHoveredFeature(index)}
+                      onMouseLeave={() => setHoveredFeature(null)}
+                      className={`bento-card p-3 md:p-6 cursor-default transition-all duration-300 ${
+                        hoveredFeature === index
+                          ? "border-accent/50 bg-accent/5 scale-[1.02] shadow-lg shadow-accent/10"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-4 text-center md:text-left">
+                        <div
+                          className={`w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+                            hoveredFeature === index
+                              ? "bg-accent text-background scale-110"
+                              : "bg-accent/10 text-accent"
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm md:text-lg mb-0.5 md:mb-1">
+                            {feature.title}
+                          </h3>
+                          <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 md:line-clamp-none">
+                            {feature.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Slide 4: URL Input */}
-        <section className="w-screen h-full shrink-0 snap-start flex items-center px-6 bg-(--background-elevated)">
-          <div className="max-w-2xl mx-auto w-full space-y-8">
-            <div className="text-center space-y-3">
-              <h2 className="text-2xl md:text-3xl font-bold">
-                YouTube URL을 입력하세요
-              </h2>
-              <p className="text-muted-foreground">
-                링크를 붙여넣으면 AI가 자동으로 분석을 시작합니다
-              </p>
+          {/* Slide 3: Steps */}
+          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6">
+            <div className="max-w-4xl mx-auto w-full">
+              <div className="text-center mb-6 md:mb-12">
+                <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">
+                  사용 방법
+                </h2>
+                <p className="text-sm md:text-base text-muted-foreground">3단계로 간단하게</p>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+                {steps.map((step, index) => (
+                  <div key={index} className="flex items-center md:items-start gap-3 md:gap-4">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-14 h-14 md:w-20 md:h-20 rounded-xl md:rounded-2xl bg-foreground text-background flex items-center justify-center font-bold text-xl md:text-3xl mb-2 md:mb-4 transition-transform hover:scale-110">
+                        {step.number}
+                      </div>
+                      <h3 className="font-semibold text-base md:text-lg mb-1 md:mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-xs md:text-sm text-muted-foreground max-w-32 md:max-w-37.5">
+                        {step.description}
+                      </p>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <ArrowRight className="hidden md:block w-6 h-6 text-muted-foreground shrink-0 mt-7" />
+                    )}
+                  </div>
+                ))}
+              </div>
+
             </div>
+          </section>
 
-            <div className="bento-card p-6 transition-all hover:border-accent/50 hover:shadow-lg hover:shadow-accent/5">
-              <UrlInput
-                onAnalyze={handleAnalyze}
-                isLoading={mutation.isPending}
-              />
+          {/* Clone: Slide 1 (Hero) - 뒤쪽 클론 */}
+          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6">
+            <div className="max-w-4xl mx-auto w-full">
+              <div className="text-center mb-4 md:mb-6">
+                <h1 className="text-2xl md:text-4xl font-bold mb-2">
+                  YouTube 영상, 빠르게 파악하세요
+                </h1>
+                <p className="text-muted-foreground text-sm md:text-lg">
+                  URL 하나로 AI가 핵심 내용을 분석해드립니다
+                </p>
+              </div>
+              {/* 간단한 플레이스홀더 */}
+              <div className="w-full max-w-3xl h-48 md:h-64 mx-auto bg-card rounded-lg border border-border flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Zap className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 text-accent" />
+                  <p className="text-sm md:text-base">AI 분석 서비스</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
 
-      {/* 사이드 네비게이션 화살표 */}
-      <button
-        onClick={prevSlide}
-        disabled={currentSlide === 0}
-        className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 p-3 md:p-4 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-muted hover:scale-110 transition-all disabled:opacity-0 disabled:pointer-events-none"
-      >
-        <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
-      </button>
-      <button
-        onClick={nextSlide}
-        disabled={currentSlide === TOTAL_SLIDES - 1}
-        className="fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-40 p-3 md:p-4 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-muted hover:scale-110 transition-all disabled:opacity-0 disabled:pointer-events-none"
-      >
-        <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
-      </button>
+        {/* 고정 CTA 버튼 */}
+        <div className="absolute bottom-16 md:bottom-20 left-1/2 -translate-x-1/2 z-40">
+          <button
+            onClick={scrollToInput}
+            className="btn-primary px-6 py-2.5 md:px-8 md:py-3 text-sm md:text-base shadow-lg shadow-black/30 hover:shadow-xl hover:shadow-black/40 transition-all"
+          >
+            지금 시작하기
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
 
-      {/* 하단 인디케이터 */}
-      <div className="shrink-0 py-4 flex items-center justify-center">
-        <div className="flex items-center gap-2">
+        {/* 사이드 네비게이션 화살표 */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 p-3 md:p-4 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-muted hover:scale-110 transition-all"
+        >
+          <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-40 p-3 md:p-4 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-muted hover:scale-110 transition-all"
+        >
+          <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
+        </button>
+
+        {/* 하단 인디케이터 */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
           {Array.from({ length: TOTAL_SLIDES }).map((_, index) => (
             <button
               key={index}
@@ -910,6 +983,127 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* URL 입력 섹션 - 스크롤 */}
+      <section
+        id="url-input-section"
+        className="min-h-screen flex items-center px-4 md:px-6 py-12 bg-(--background-elevated)"
+      >
+        <div className="max-w-2xl mx-auto w-full space-y-6 md:space-y-8">
+          <div className="text-center space-y-2 md:space-y-3">
+            <h2 className="text-xl md:text-3xl font-bold">
+              YouTube URL을 입력하세요
+            </h2>
+            <p className="text-sm md:text-base text-muted-foreground">
+              링크를 붙여넣으면 AI가 자동으로 분석을 시작합니다
+            </p>
+          </div>
+
+          <div className="bento-card p-4 md:p-6 transition-all hover:border-accent/50 hover:shadow-lg hover:shadow-accent/5">
+            <UrlInput
+              onAnalyze={handleAnalyze}
+              isLoading={mutation.isPending}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-background/80 text-gray-300">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+            {/* 회사 정보 */}
+            <div className="space-y-4">
+              <h1 className="text-lg font-bold text-white">WIGTN</h1>
+              {/* <h5>(KOCCA Speaking Test)</h5> */}
+              <p className="text-sm">Youtube 영상 AI 분석 서비스</p>
+            </div>
+
+            {/* 링크 */}
+            <div>
+              <h4 className="mb-4 font-semibold text-white">서비스</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link href="/" className="transition hover:text-white">
+                    문제 풀기
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/guide" className="transition hover:text-white">
+                    사용 가이드
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faq" className="transition hover:text-white">
+                    자주 묻는 질문
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* 회사 */}
+            <div>
+              <h4 className="mb-4 font-semibold text-white">회사</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a href="/about" className="transition hover:text-white">
+                    소개
+                  </a>
+                </li>
+                <li>
+                  <a href="/contact" className="transition hover:text-white">
+                    문의하기
+                  </a>
+                </li>
+                <li>
+                  <a href="/privacy" className="transition hover:text-white">
+                    개인정보처리방침
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* 소셜 미디어 */}
+            <div>
+              <h4 className="mb-4 font-semibold text-white">팔로우</h4>
+              <div className="flex space-x-4">
+                <a href="#" className="transition hover:text-white">
+                  <svg
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                </a>
+                <a href="#" className="transition hover:text-white">
+                  <svg
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+                  </svg>
+                </a>
+                <a href="#" className="transition hover:text-white">
+                  <svg
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* 하단 저작권 */}
+          <div className="mt-8 border-t border-gray-800 pt-8 text-center text-sm">
+            <p>&copy; 2025 SoundMind. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

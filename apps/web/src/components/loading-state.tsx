@@ -1,88 +1,128 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 
-const STEPS = [
-  { label: "URL 검증", duration: 500 },
-  { label: "메타데이터 수집", duration: 1500 },
-  { label: "자막 추출", duration: 2000 },
-  { label: "오디오 처리", duration: 8000 },
-  { label: "AI 분석", duration: 4000 },
-  { label: "결과 생성", duration: 1000 },
+const MESSAGES = [
+  "AI가 분석 중입니다...",
+  "영상 내용을 파악하고 있어요",
+  "핵심 장면을 찾고 있습니다",
+  "키워드를 추출하는 중이에요",
+  "자막을 분석하고 있습니다",
+  "거의 다 됐어요!",
 ];
 
 export function LoadingState() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
-    let elapsed = 0;
-    const totalDuration = STEPS.reduce((sum, step) => sum + step.duration, 0);
-
     const interval = setInterval(() => {
-      elapsed += 100;
-
-      let cumulativeDuration = 0;
-      let stepIndex = 0;
-      for (let i = 0; i < STEPS.length; i++) {
-        cumulativeDuration += STEPS[i].duration;
-        if (elapsed < cumulativeDuration) {
-          stepIndex = i;
-          break;
-        }
-      }
-      setCurrentStep(stepIndex);
-
-      const newProgress = Math.min((elapsed / totalDuration) * 100, 95);
-      setProgress(newProgress);
-    }, 100);
+      setMessageIndex((prev) => (prev + 1) % MESSAGES.length);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="bento-card p-8 text-center max-w-md w-full">
-      {/* Spinner */}
-      <div className="relative w-20 h-20 mx-auto mb-6">
-        <div className="absolute inset-0 rounded-full border-2 border-accent/20" />
-        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-accent animate-spin" />
-        <Loader2 className="absolute inset-0 m-auto w-8 h-8 text-accent animate-pulse" />
-      </div>
+      {/* Animated SVG */}
+      <svg
+        viewBox="0 0 200 200"
+        className="w-32 h-32 mx-auto mb-6"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <style>
+            {`
+              @keyframes pulse1 {
+                0%, 100% { transform: scale(1); opacity: 0.3; }
+                50% { transform: scale(1.15); opacity: 0.6; }
+              }
+              @keyframes pulse2 {
+                0%, 100% { transform: scale(1); opacity: 0.4; }
+                50% { transform: scale(1.1); opacity: 0.7; }
+              }
+              @keyframes pulse3 {
+                0%, 100% { transform: scale(1); opacity: 0.5; }
+                50% { transform: scale(1.05); opacity: 0.8; }
+              }
+              @keyframes rotateRing {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              @keyframes dash {
+                0% { stroke-dashoffset: 300; }
+                50% { stroke-dashoffset: 100; }
+                100% { stroke-dashoffset: 300; }
+              }
+              @keyframes barPulse1 {
+                0%, 100% { height: 20px; opacity: 0.5; }
+                50% { height: 40px; opacity: 1; }
+              }
+              @keyframes barPulse2 {
+                0%, 100% { height: 30px; opacity: 0.6; }
+                50% { height: 50px; opacity: 1; }
+              }
+              @keyframes barPulse3 {
+                0%, 100% { height: 25px; opacity: 0.5; }
+                50% { height: 45px; opacity: 1; }
+              }
+              @keyframes barPulse4 {
+                0%, 100% { height: 35px; opacity: 0.7; }
+                50% { height: 55px; opacity: 1; }
+              }
+              @keyframes barPulse5 {
+                0%, 100% { height: 22px; opacity: 0.5; }
+                50% { height: 42px; opacity: 1; }
+              }
+              .ring1 { animation: pulse1 2s ease-in-out infinite; transform-origin: center; }
+              .ring2 { animation: pulse2 2s ease-in-out infinite 0.3s; transform-origin: center; }
+              .ring3 { animation: pulse3 2s ease-in-out infinite 0.6s; transform-origin: center; }
+              .rotating-ring { animation: rotateRing 3s linear infinite; transform-origin: center; }
+              .dash-ring { animation: dash 2s ease-in-out infinite; }
+              .bar1 { animation: barPulse1 1s ease-in-out infinite; }
+              .bar2 { animation: barPulse2 1s ease-in-out infinite 0.1s; }
+              .bar3 { animation: barPulse3 1s ease-in-out infinite 0.2s; }
+              .bar4 { animation: barPulse4 1s ease-in-out infinite 0.3s; }
+              .bar5 { animation: barPulse5 1s ease-in-out infinite 0.4s; }
+            `}
+          </style>
+        </defs>
 
-      {/* Current Step */}
-      <h3 className="text-lg font-semibold mb-2">{STEPS[currentStep]?.label}</h3>
-      <p className="text-sm text-muted-foreground mb-6">
-        영상을 분석하고 있습니다
+        {/* 배경 펄스 링 */}
+        <circle className="ring1" cx="100" cy="100" r="70" fill="var(--accent)" opacity="0.3" />
+        <circle className="ring2" cx="100" cy="100" r="55" fill="var(--accent)" opacity="0.4" />
+        <circle className="ring3" cx="100" cy="100" r="40" fill="var(--accent)" opacity="0.5" />
+
+        {/* 회전하는 대시 링 */}
+        <g className="rotating-ring">
+          <circle
+            className="dash-ring"
+            cx="100"
+            cy="100"
+            r="75"
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="3"
+            strokeDasharray="50 30"
+            strokeLinecap="round"
+          />
+        </g>
+
+        {/* 중앙 오디오 파형 바 */}
+        <g transform="translate(100, 100)">
+          <rect className="bar1" x="-30" y="-20" width="6" height="20" rx="3" fill="var(--foreground)" style={{ transformOrigin: 'center bottom' }} />
+          <rect className="bar2" x="-18" y="-30" width="6" height="30" rx="3" fill="var(--foreground)" style={{ transformOrigin: 'center bottom' }} />
+          <rect className="bar3" x="-6" y="-25" width="6" height="25" rx="3" fill="var(--foreground)" style={{ transformOrigin: 'center bottom' }} />
+          <rect className="bar4" x="6" y="-35" width="6" height="35" rx="3" fill="var(--foreground)" style={{ transformOrigin: 'center bottom' }} />
+          <rect className="bar5" x="18" y="-22" width="6" height="22" rx="3" fill="var(--foreground)" style={{ transformOrigin: 'center bottom' }} />
+        </g>
+      </svg>
+
+      {/* Rotating Message */}
+      <p className="text-lg font-medium text-foreground">
+        {MESSAGES[messageIndex]}
       </p>
-
-      {/* Progress Bar */}
-      <div className="space-y-2">
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-accent transition-all duration-100 rounded-full"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{Math.round(progress)}%</span>
-          <span>{currentStep + 1} / {STEPS.length}</span>
-        </div>
-      </div>
-
-      {/* Step Indicators */}
-      <div className="flex justify-center gap-1.5 mt-6">
-        {STEPS.map((_, index) => (
-          <div
-            key={index}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              index <= currentStep
-                ? "bg-accent"
-                : "bg-muted"
-            } ${index === currentStep ? "scale-125" : ""}`}
-          />
-        ))}
-      </div>
     </div>
   );
 }
