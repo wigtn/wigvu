@@ -49,13 +49,14 @@ export class TranscriptService {
     this.logger.debug(`Fetching transcript for video: ${videoId}`);
     let transcriptData = await this.fetchYouTubeTranscript(videoId, lang);
 
-    // If no YouTube captions and STT is enabled, try STT fallback
+    // If no YouTube captions (or empty segments) and STT is enabled, try STT fallback
+    const hasValidTranscript = transcriptData.segments && transcriptData.segments.length > 0;
     if (
-      transcriptData.source === 'none' &&
+      !hasValidTranscript &&
       useStt &&
       this.sttEnabled
     ) {
-      this.logger.debug(`No YouTube captions found, attempting STT fallback for: ${videoId}`);
+      this.logger.debug(`No valid transcript found (source: ${transcriptData.source}, segments: ${transcriptData.segments?.length || 0}), attempting STT fallback for: ${videoId}`);
 
       // Check video duration limit for STT
       const maxDurationSeconds = this.sttMaxDurationMinutes * 60;
@@ -86,8 +87,8 @@ export class TranscriptService {
       }
     }
 
-    if (transcriptData.source !== 'none') {
-      // Store in cache
+    // Only cache if we have actual segments
+    if (transcriptData.segments && transcriptData.segments.length > 0) {
       await this.cacheManager.set(cacheKey, transcriptData, this.cacheTtl);
     }
 

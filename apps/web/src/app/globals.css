@@ -380,4 +380,18 @@
       box-shadow: 0 0 25px var(--accent-glow);
     }
   }
+
+  /* Floating button animation */
+  .animate-float-button {
+    animation: floatButton 3s ease-in-out infinite;
+  }
+
+  @keyframes floatButton {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
 }

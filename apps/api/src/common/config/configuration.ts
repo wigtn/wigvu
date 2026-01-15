@@ -14,9 +14,14 @@ export default () => ({
 
   stt: {
     enabled: process.env.STT_ENABLED !== 'false', // default: true
-    maxDurationMinutes: parseInt(process.env.STT_MAX_DURATION_MINUTES || '20', 10),
+    maxDurationMinutes: parseInt(process.env.STT_MAX_DURATION_MINUTES || '30', 10),
     audioDownloadTimeout: parseInt(process.env.STT_AUDIO_TIMEOUT || '60000', 10),
     transcribeTimeout: parseInt(process.env.STT_TRANSCRIBE_TIMEOUT || '120000', 10),
+  },
+
+  analysis: {
+    // 절대 최대 영상 길이 (분). 이를 초과하면 분석 거부
+    maxVideoDurationMinutes: parseInt(process.env.MAX_VIDEO_DURATION_MINUTES || '60', 10),
   },
 
   rateLimit: {

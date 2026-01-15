@@ -51,17 +51,13 @@ export async function translateSegments(
 
   const config = getEnvConfig();
 
-  if (!config.AI_SERVICE_URL) {
-    throw new Error("AI_SERVICE_URL is not configured");
-  }
-
   logger.info("번역 시작", {
     totalSegments: segments.length,
     sourceLanguage,
     targetLanguage,
   });
 
-  const response = await fetch(`${config.AI_SERVICE_URL}/api/v1/translate`, {
+  const response = await fetch(`${config.API_URL}/api/v1/translate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

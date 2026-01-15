@@ -5,7 +5,7 @@
 
 import { getEnvConfig } from "@/lib/config/env";
 import { createLogger } from "@/lib/logger";
-import { STTSegment } from "@/lib/stt";
+import { STTSegment } from "@/lib/services/transcript";
 
 const logger = createLogger("AIAnalysis");
 
@@ -47,10 +47,6 @@ export async function analyzeWithAI(
 ): Promise<AnalysisResult> {
   const config = getEnvConfig();
 
-  if (!config.AI_SERVICE_URL) {
-    throw new Error("AI_SERVICE_URL is not configured");
-  }
-
   logger.debug("AI 분석 요청", {
     title: metadata.title.slice(0, 50),
     hasTranscript: !!transcript,
@@ -67,7 +63,7 @@ export async function analyzeWithAI(
     segments: segments || undefined,
   };
 
-  const response = await fetch(`${config.AI_SERVICE_URL}/api/v1/analyze`, {
+  const response = await fetch(`${config.API_URL}/api/v1/analyze`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

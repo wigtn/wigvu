@@ -1,8 +1,13 @@
 /**
- * YouTube Data API를 사용한 비디오 메타데이터 조회
+ * YouTube 비디오 메타데이터 조회 (NestJS API Gateway 경유)
  */
 
-interface VideoMetadata {
+import { getEnvConfig } from "@/lib/config/env";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("YouTubeMetadata");
+
+export interface VideoMetadata {
   videoId: string;
   title: string;
   channelName: string;
@@ -15,56 +20,65 @@ interface VideoMetadata {
   description: string;
 }
 
-/**
- * ISO 8601 duration 형식을 초 단위로 변환
- * @example "PT1H2M30S" -> 3750 (1시간 2분 30초)
- */
-function parseDuration(duration: string): number {
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return 0;
-
-  const hours = parseInt(match[1] || "0");
-  const minutes = parseInt(match[2] || "0");
-  const seconds = parseInt(match[3] || "0");
-
-  return hours * 3600 + minutes * 60 + seconds;
+interface MetadataApiResponse {
+  success: boolean;
+  data?: VideoMetadata;
+  meta?: {
+    cached: boolean;
+    cacheExpires?: string;
+  };
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 /**
- * YouTube Data API로 비디오 메타데이터 조회
+ * NestJS API Gateway를 통해 YouTube 메타데이터 조회
  */
 export async function fetchVideoMetadata(
   videoId: string
 ): Promise<VideoMetadata> {
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) {
-    throw new Error("YouTube API key not configured");
+  const config = getEnvConfig();
+
+  if (!config.API_URL) {
+    throw new Error("API_URL is not configured");
   }
 
-  const url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails,statistics&key=${apiKey}`;
-  const response = await fetch(url);
-  const data = await response.json();
+  logger.debug("메타데이터 요청", { videoId });
 
-  if (!data.items || data.items.length === 0) {
-    throw new Error("VIDEO_NOT_FOUND");
+  const response = await fetch(
+    `${config.API_URL}/api/v1/youtube/metadata/${videoId}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  const result: MetadataApiResponse = await response.json();
+
+  if (!response.ok || !result.success || !result.data) {
+    const errorCode = result.error?.code || "UNKNOWN_ERROR";
+    const errorMsg = result.error?.message || `API error: ${response.status}`;
+
+    logger.error("메타데이터 조회 실패", {
+      videoId,
+      status: response.status,
+      error: result.error,
+    });
+
+    if (errorCode === "VIDEO_NOT_FOUND") {
+      throw new Error("VIDEO_NOT_FOUND");
+    }
+    throw new Error(errorMsg);
   }
 
-  const item = data.items[0];
-  const duration = parseDuration(item.contentDetails.duration);
-
-  return {
+  logger.debug("메타데이터 조회 성공", {
     videoId,
-    title: item.snippet.title,
-    channelName: item.snippet.channelTitle,
-    channelId: item.snippet.channelId,
-    publishedAt: item.snippet.publishedAt,
-    duration,
-    viewCount: parseInt(item.statistics.viewCount || "0"),
-    likeCount: parseInt(item.statistics.likeCount || "0"),
-    thumbnailUrl:
-      item.snippet.thumbnails.maxres?.url ||
-      item.snippet.thumbnails.high?.url ||
-      item.snippet.thumbnails.default?.url,
-    description: item.snippet.description,
-  };
+    cached: result.meta?.cached,
+  });
+
+  return result.data;
 }

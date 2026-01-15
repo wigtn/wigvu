@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
@@ -29,11 +29,7 @@ export interface SttResponse {
   };
 }
 
-export interface AudioDownloadResponse {
-  success: boolean;
-  data: Buffer;
-  audioDuration?: number;
-}
+// AudioDownloadResponse removed - audio download not supported via API Gateway
 
 export interface TranslatedSegment {
   start: number;
@@ -137,6 +133,7 @@ export class AiClientService {
       const response = await this.client.post<TranslationResponse>(
         '/api/v1/translate',
         request,
+        { timeout: 300000 }, // 5 minutes for long transcripts
       );
 
       this.onSuccess();
@@ -157,6 +154,7 @@ export class AiClientService {
       const response = await this.client.post<AnalysisResponse>(
         '/api/v1/analyze',
         request,
+        { timeout: 120000 }, // 2 minutes for AI analysis
       );
 
       this.onSuccess();
@@ -244,43 +242,8 @@ export class AiClientService {
   }
 
   /**
-   * Download audio from YouTube video via AI service
-   */
-  async downloadAudio(videoId: string): Promise<AudioDownloadResponse | null> {
-    if (!this.isCircuitAvailable()) {
-      this.logger.warn('Circuit breaker OPEN - skipping audio download');
-      return null;
-    }
-
-    try {
-      const response = await this.client.post(
-        '/api/v1/audio/download',
-        { videoId },
-        {
-          timeout: 60000, // 60 seconds for audio download
-          responseType: 'arraybuffer',
-        },
-      );
-
-      this.onSuccess();
-
-      const audioDuration = response.headers['x-audio-duration']
-        ? parseFloat(response.headers['x-audio-duration'])
-        : undefined;
-
-      return {
-        success: true,
-        data: Buffer.from(response.data),
-        audioDuration,
-      };
-    } catch (error) {
-      this.onFailure(error);
-      return null;
-    }
-  }
-
-  /**
    * Transcribe audio using STT via AI service
+   * Calls /stt/transcribe endpoint (or legacy /whisperX/transcribe)
    */
   async transcribe(
     audioBuffer: Buffer,
@@ -301,11 +264,17 @@ export class AiClientService {
       });
       formData.append('language', language);
 
-      const response = await this.client.post<SttResponse>(
-        '/api/v1/stt',
+      // Use /stt/transcribe endpoint (ai server)
+      const response = await this.client.post<{
+        text: string;
+        language: string;
+        language_probability: number;
+        segments: Array<{ start: number; end: number; text: string }>;
+      }>(
+        '/stt/transcribe',
         formData,
         {
-          timeout: 120000, // 120 seconds for STT
+          timeout: 300000, // 5 minutes for STT
           headers: {
             ...formData.getHeaders(),
             'X-Internal-API-Key': this.internalApiKey,
@@ -314,7 +283,17 @@ export class AiClientService {
       );
 
       this.onSuccess();
-      return response.data;
+
+      // Transform response to SttResponse format
+      return {
+        success: true,
+        data: {
+          text: response.data.text,
+          language: response.data.language,
+          languageProbability: response.data.language_probability,
+          segments: response.data.segments,
+        },
+      };
     } catch (error) {
       this.onFailure(error);
       return null;
@@ -322,35 +301,65 @@ export class AiClientService {
   }
 
   /**
-   * Full STT pipeline: download audio and transcribe
+   * Download audio from YouTube video and transcribe using STT
+   * Uses AI service's /stt/video endpoint which handles download via yt-dlp
+   * @param videoId YouTube video ID
+   * @param language Language hint for STT
+   * @returns STT response with transcription
    */
   async sttFromVideo(
     videoId: string,
     language = 'auto',
   ): Promise<SttResponse | null> {
-    this.logger.log(`Starting STT pipeline for video: ${videoId}`);
-
-    // Step 1: Download audio
-    const audioResult = await this.downloadAudio(videoId);
-    if (!audioResult?.success) {
-      this.logger.warn(`Audio download failed for video: ${videoId}`);
+    if (!this.isCircuitAvailable()) {
+      this.logger.warn('Circuit breaker OPEN - skipping STT from video');
       return null;
     }
 
-    this.logger.debug(
-      `Audio downloaded: ${audioResult.data.length} bytes, duration: ${audioResult.audioDuration}s`,
-    );
+    try {
+      this.logger.log(`Starting STT from video: ${videoId}`);
 
-    // Step 2: Transcribe audio
-    const sttResult = await this.transcribe(audioResult.data, language);
-    if (!sttResult?.success) {
-      this.logger.warn(`STT failed for video: ${videoId}`);
+      // Call AI service's /stt/video endpoint
+      // This endpoint downloads audio using yt-dlp and transcribes
+      const response = await this.client.post<{
+        text: string;
+        language: string;
+        language_probability: number;
+        segments: Array<{ start: number; end: number; text: string }>;
+      }>(
+        `/stt/video/${videoId}`,
+        null,
+        {
+          timeout: 600000, // 10 minutes for download + STT
+          params: { language },
+          headers: {
+            'X-Internal-API-Key': this.internalApiKey,
+          },
+        },
+      );
+
+      this.onSuccess();
+
+      this.logger.log(
+        `STT completed for ${videoId}: ${response.data.segments.length} segments`,
+      );
+
+      // Transform response to SttResponse format
+      return {
+        success: true,
+        data: {
+          text: response.data.text,
+          language: response.data.language,
+          languageProbability: response.data.language_probability,
+          segments: response.data.segments,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `STT from video failed for ${videoId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      this.onFailure(error);
       return null;
     }
-
-    this.logger.log(
-      `STT completed for ${videoId}: ${sttResult.data.segments.length} segments`,
-    );
-    return sttResult;
   }
 }

@@ -8,12 +8,9 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - AI_SERVICE_URL=http://ai:5000
-      - STT_API_URL=http://ai:5000
+      - API_URL=http://api:4000
     depends_on:
-      ai:
+      api:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -33,14 +30,22 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
+      - CORS_ORIGIN=http://web:3000
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - AI_SERVICE_URL=http://ai:5000
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - STT_MAX_DURATION_MINUTES=${STT_MAX_DURATION_MINUTES:-120}
+      # Rate Limiting
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-60}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       ai:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/api/v1/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -54,10 +59,33 @@ services:
     ports:
       - "5000:5000"
     environment:
+      # API Keys
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      # STT Configuration
       - STT_API_URL=${STT_API_URL:-http://work.soundmind.life:12321}
       - STT_MAX_DURATION_MINUTES=${STT_MAX_DURATION_MINUTES:-120}
+      # File Limits
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-500}
+      # Rate Limiting
+      - RATE_LIMIT_ANALYZE=${RATE_LIMIT_ANALYZE:-30}
+      - RATE_LIMIT_STT=${RATE_LIMIT_STT:-10}
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-10}
+      # Retry Settings
+      - RETRY_MAX_ATTEMPTS=${RETRY_MAX_ATTEMPTS:-3}
+      - RETRY_BASE_DELAY=${RETRY_BASE_DELAY:-1.0}
+      # Timeouts
+      - TIMEOUT_ANALYZE=${TIMEOUT_ANALYZE:-30}
+      - TIMEOUT_STT=${TIMEOUT_STT:-300}
+      - TIMEOUT_HEALTH=${TIMEOUT_HEALTH:-5}
+      # Validation Limits
+      - MAX_TITLE_LENGTH=${MAX_TITLE_LENGTH:-200}
+      - MAX_CHANNEL_LENGTH=${MAX_CHANNEL_LENGTH:-100}
+      - MAX_DESCRIPTION_LENGTH=${MAX_DESCRIPTION_LENGTH:-2000}
+      - MAX_TRANSCRIPT_LENGTH=${MAX_TRANSCRIPT_LENGTH:-50000}
+      - MAX_SEGMENTS_COUNT=${MAX_SEGMENTS_COUNT:-1000}
+      # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     restart: unless-stopped
     healthcheck:

@@ -9,12 +9,13 @@ import { useVideoSync } from "@/hooks/use-video-sync";
 import { ScriptPanel } from "@/components/script-panel";
 import { KeyMomentsBar } from "@/components/key-moments-bar";
 import { UrlInput } from "@/components/url-input";
+import { FloatingMemo } from "@/components/floating-memo";
 import {
   Clock,
   Eye,
-  RotateCcw,
   ThumbsUp,
   AlertCircle,
+  NotebookPen,
 } from "lucide-react";
 
 interface AnalysisViewProps {
@@ -33,6 +34,7 @@ export function AnalysisView({
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [isMemoOpen, setIsMemoOpen] = useState(false);
   // React useId로 고유한 ID 생성 (컴포넌트 인스턴스마다 다름)
   const uniqueId = useId();
   const playerId = `yt-player-${uniqueId.replace(/:/g, "")}`;
@@ -135,7 +137,7 @@ export function AnalysisView({
   return (
     <div className="flex flex-col h-full fade-in">
       {/* Header - URL Input & Meta */}
-      <header className="flex-shrink-0 border-b border-border bg-[var(--background-elevated)]">
+      <header className="shrink-0 border-b border-border bg-(--background-elevated)">
         <div className="flex items-center gap-4 px-4 py-2">
           {/* Logo */}
           <button
@@ -166,9 +168,15 @@ export function AnalysisView({
             </span>
           </div>
 
-          {/* Reset Button */}
-          <button onClick={onReset} className="btn-ghost p-2" title="새 분석">
-            <RotateCcw className="w-4 h-4" />
+          {/* Memo Button */}
+          <button
+            onClick={() => setIsMemoOpen(!isMemoOpen)}
+            className={`p-2 rounded-md border transition-colors bg-background border-border hover:bg-muted ${
+              isMemoOpen ? "text-accent" : ""
+            }`}
+            title="메모"
+          >
+            <NotebookPen className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -262,6 +270,14 @@ export function AnalysisView({
           onMomentClick={handleSegmentClick}
         />
       </footer>
+
+      {/* Floating Memo */}
+      <FloatingMemo
+        videoTitle={analysis.title}
+        videoId={analysis.videoId}
+        isOpen={isMemoOpen}
+        onClose={() => setIsMemoOpen(false)}
+      />
     </div>
   );
 }

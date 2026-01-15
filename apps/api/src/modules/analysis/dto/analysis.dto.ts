@@ -1,6 +1,76 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsUrl } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsUrl, IsArray, IsNumber, ValidateNested, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
+/** AI 분석 직접 요청용 DTO (메타데이터 + 자막 기반) */
+export class AnalyzeMetadataDto {
+  @IsString()
+  title!: string;
+
+  @IsString()
+  channelName!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class AnalyzeSegmentDto {
+  @IsNumber()
+  @Min(0)
+  start!: number;
+
+  @IsNumber()
+  @Min(0)
+  end!: number;
+
+  @IsString()
+  text!: string;
+
+  @IsOptional()
+  @IsString()
+  originalText?: string;
+
+  @IsOptional()
+  @IsString()
+  translatedText?: string;
+}
+
+export class AnalyzeDirectDto {
+  @ValidateNested()
+  @Type(() => AnalyzeMetadataDto)
+  metadata!: AnalyzeMetadataDto;
+
+  @IsOptional()
+  @IsString()
+  transcript?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AnalyzeSegmentDto)
+  segments?: AnalyzeSegmentDto[];
+}
+
+export interface AnalyzeDirectResponse {
+  success: boolean;
+  data?: {
+    summary: string;
+    watchScore: number;
+    watchScoreReason: string;
+    keywords: string[];
+    highlights: Array<{
+      timestamp: number;
+      title: string;
+      description: string;
+    }>;
+  };
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
+/** URL 기반 전체 파이프라인 DTO */
 export class AnalyzeVideoDto {
   @IsString()
   @IsNotEmpty()
@@ -30,6 +100,11 @@ export interface TranscriptSegmentWithTranslation {
   translatedText: string;
 }
 
+export interface AnalysisWarning {
+  code: string;
+  message: string;
+}
+
 export interface AnalysisResult {
   id: string;
   videoId: string;
@@ -47,6 +122,7 @@ export interface AnalysisResult {
   isKorean: boolean;
   isTranslated: boolean;
   analyzedAt: string;
+  warnings?: AnalysisWarning[];
 }
 
 export interface AnalysisResponse {

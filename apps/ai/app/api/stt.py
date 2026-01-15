@@ -1,9 +1,9 @@
 """STT proxy endpoint"""
 
 import structlog
-from fastapi import APIRouter, File, Form, UploadFile, Request
+from fastapi import APIRouter, File, Form, UploadFile, Request, HTTPException
 
-from app.services import STTClient
+from app.services import STTClient, YouTubeAudioDownloader
 from app.models import STTResponse
 from app.core.rate_limiter import limiter, get_stt_limit
 
@@ -82,3 +82,84 @@ async def transcribe_legacy(
     Same as /stt/transcribe but with old path
     """
     return await transcribe(request=request, audio=audio, language=language)
+
+
+@router.post("/stt/video/{video_id}", response_model=STTResponse)
+@limiter.limit(get_stt_limit)
+async def transcribe_video(
+    request: Request,
+    video_id: str,
+    language: str = "auto"
+) -> STTResponse:
+    """
+    Download audio from YouTube and transcribe using STT
+
+    This endpoint handles the full pipeline:
+    1. Download audio from YouTube using yt-dlp
+    2. Send to external STT API
+    3. Return transcription result
+
+    Args:
+        request: FastAPI request object (for rate limiting)
+        video_id: YouTube video ID
+        language: Language hint ("auto" for auto-detection)
+
+    Returns:
+        STT result with text, language, and segments
+
+    Raises:
+        HTTPException 400: If video download fails
+        HTTPException 413: If video duration exceeds limit
+        STTError: If STT API call fails
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+
+    logger.info(
+        "stt_video_request_received",
+        request_id=request_id,
+        video_id=video_id,
+        language=language
+    )
+
+    # Download audio from YouTube
+    downloader = YouTubeAudioDownloader()
+    audio_data, duration = await downloader.download_audio(video_id)
+
+    if audio_data is None:
+        if duration and not downloader.is_within_limit(duration):
+            raise HTTPException(
+                status_code=413,
+                detail=f"Video duration ({duration}s) exceeds maximum allowed ({downloader.max_duration_minutes * 60}s)"
+            )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to download audio from video: {video_id}"
+        )
+
+    logger.info(
+        "stt_video_audio_downloaded",
+        request_id=request_id,
+        video_id=video_id,
+        size_mb=round(len(audio_data) / 1024 / 1024, 2),
+        duration=duration
+    )
+
+    # Transcribe using STT
+    stt_client = STTClient()
+    result = await stt_client.transcribe(
+        audio_data=audio_data,
+        filename=f"{video_id}.m4a",
+        language=language,
+        content_type="audio/mp4"
+    )
+
+    logger.info(
+        "stt_video_request_complete",
+        request_id=request_id,
+        video_id=video_id,
+        text_length=len(result.text),
+        language=result.language,
+        segments_count=len(result.segments)
+    )
+
+    return result

@@ -12,7 +12,7 @@ from app import __version__
 from app.api import router
 from app.config import get_settings
 from app.core.error_handlers import setup_exception_handlers
-from app.core.middleware import RequestIdMiddleware, LoggingMiddleware
+from app.core.middleware import ApiKeyMiddleware, RequestIdMiddleware, LoggingMiddleware
 from app.core.rate_limiter import limiter
 
 
@@ -65,6 +65,7 @@ setup_exception_handlers(app)
 
 # Middleware (order matters - first added is outermost)
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(ApiKeyMiddleware)
 app.add_middleware(RequestIdMiddleware)
 
 # CORS middleware
