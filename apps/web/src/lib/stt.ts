@@ -16,14 +16,20 @@ export interface STTResult {
   segments: STTSegment[];
 }
 
+/**
+ * @deprecated NestJS Gateway의 /api/v1/transcript/:videoId 사용 권장
+ * 직접 STT 호출이 필요한 경우에만 사용
+ */
 export async function transcribeAudio(
   audioBuffer: Buffer,
   language: string = "auto"
 ): Promise<STTResult> {
   const config = getEnvConfig();
 
-  if (!config.STT_API_URL) {
-    throw new Error("STT_API_URL is not configured");
+  // API_URL (NestJS Gateway) 또는 AI_SERVICE_URL (직접 호출)
+  const baseUrl = config.API_URL || config.AI_SERVICE_URL;
+  if (!baseUrl) {
+    throw new Error("API_URL or AI_SERVICE_URL is not configured");
   }
 
   const formData = new FormData();
@@ -33,7 +39,9 @@ export async function transcribeAudio(
   formData.append("audio", blob, "audio.webm");
   formData.append("language", language);
 
-  const response = await fetch(`${config.STT_API_URL}/whisperX/transcribe`, {
+  // AI 서버 직접 호출 (NestJS Gateway는 STT 직접 호출 미지원)
+  const sttUrl = config.AI_SERVICE_URL || baseUrl;
+  const response = await fetch(`${sttUrl}/stt/transcribe`, {
     method: "POST",
     body: formData,
   });
