@@ -2,16 +2,15 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
 import { LoadingState } from "@/components/loading-state";
+import { ErrorModal } from "@/components/error-display";
 import { HeroSection } from "@/components/hero-section";
 import { VideoAnalysis, AnalyzeResponse } from "@/types/analysis";
 import { analysisStore } from "@/store/analysis-store";
+import { ApiError } from "@/lib/errors";
 import {
-  RotateCcw,
-  AlertCircle,
   Zap,
   Languages,
   Sparkles,
@@ -88,7 +87,8 @@ async function analyzeVideo(url: string): Promise<VideoAnalysis> {
   const data: AnalyzeResponse = await response.json();
 
   if (!data.success || !data.data) {
-    throw new Error(data.error?.message || "Analysis failed");
+    // ApiError로 변환하여 사용자 친화적 메시지 사용
+    throw ApiError.fromResponse(data, response.status);
   }
 
   return data.data;
@@ -239,26 +239,12 @@ export default function Home() {
     );
   }
 
-  // 에러 상태
-  if (mutation.isError) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="bento-card p-8 max-w-md w-full text-center">
-          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">분석 실패</h2>
-          <p className="text-muted-foreground mb-6">
-            {mutation.error instanceof Error
-              ? mutation.error.message
-              : "알 수 없는 오류가 발생했습니다"}
-          </p>
-          <button onClick={handleReset} className="btn-primary">
-            <RotateCcw className="w-4 h-4" />
-            다시 시도
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // 에러 상태 - ErrorModal로 표시
+  const errorForModal = mutation.isError
+    ? (mutation.error instanceof ApiError
+        ? mutation.error
+        : ApiError.fromFetchError(mutation.error))
+    : null;
 
   // 초기 상태: 랜딩 페이지 (가로 캐러셀 + 스크롤 URL 입력)
   return (
@@ -645,6 +631,17 @@ export default function Home() {
         </div>
         {/* </div> */}
       </footer>
+
+      {/* 에러 모달 */}
+      {errorForModal && (
+        <ErrorModal
+          isOpen={mutation.isError}
+          onClose={() => mutation.reset()}
+          error={errorForModal}
+          onReset={handleReset}
+          autoRedirectDelay={5}
+        />
+      )}
     </div>
   );
 }

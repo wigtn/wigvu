@@ -4,8 +4,23 @@
 
 import { getEnvConfig } from "@/lib/config/env";
 import { createLogger } from "@/lib/logger";
+import { ERROR_CODES } from "@/lib/errors/error-codes";
 
 const logger = createLogger("Translation");
+
+/**
+ * 번역 서비스 에러 - 상위 레이어에서 처리
+ */
+export class TranslationError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly details?: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = "TranslationError";
+  }
+}
 
 /** 번역할 세그먼트 */
 export interface TranslationSegment {
@@ -72,12 +87,13 @@ export async function translateSegments(
   const result: TranslateResponse = await response.json();
 
   if (!response.ok || !result.success) {
-    const errorMsg = result.error?.message || `Translation error: ${response.status}`;
+    const errorCode = result.error?.code || ERROR_CODES.INTERNAL_ERROR;
+    const errorMsg = result.error?.message || `번역 중 오류가 발생했습니다`;
     logger.error("번역 실패", {
       status: response.status,
       error: result.error,
     });
-    throw new Error(errorMsg);
+    throw new TranslationError(errorCode, errorMsg, { status: response.status });
   }
 
   if (!result.data?.segments) {

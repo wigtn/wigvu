@@ -14,10 +14,12 @@ from app.models.schemas import (
 from app.services.translation import translate_segments
 from app.core.rate_limiter import limiter
 from app.core.exceptions import AIServiceError, ErrorCode
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+settings = get_settings()
 
 
 @router.post("/translate", response_model=TranslateResponse)
@@ -43,6 +45,21 @@ async def translate(
             "target_language": body.target_language,
         }
     )
+
+    # 총 텍스트 길이 체크
+    total_text_length = sum(len(seg.text) for seg in body.segments)
+    max_transcript_length = settings.max_transcript_length
+
+    if total_text_length > max_transcript_length:
+        raise AIServiceError(
+            code=ErrorCode.TRANSCRIPT_TOO_LONG,
+            message=f"자막 텍스트가 너무 많아요! AI가 읽기 힘들어해요. (현재: {total_text_length:,}자, 최대: {max_transcript_length:,}자)",
+            status_code=400,
+            details={
+                "total_text_length": total_text_length,
+                "max_transcript_length": max_transcript_length,
+            }
+        )
 
     try:
         # Convert request segments to translation format

@@ -1,14 +1,17 @@
 """STT proxy endpoint"""
 
 import structlog
-from fastapi import APIRouter, File, Form, UploadFile, Request, HTTPException
+from fastapi import APIRouter, File, Form, UploadFile, Request
 
 from app.services import STTClient, YouTubeAudioDownloader
 from app.models import STTResponse
 from app.core.rate_limiter import limiter, get_stt_limit
+from app.core.exceptions import AIServiceError, ErrorCode
+from app.config import get_settings
 
 logger = structlog.get_logger()
 router = APIRouter()
+settings = get_settings()
 
 
 @router.post("/stt/transcribe", response_model=STTResponse)
@@ -127,13 +130,23 @@ async def transcribe_video(
 
     if audio_data is None:
         if duration and not downloader.is_within_limit(duration):
-            raise HTTPException(
-                status_code=413,
-                detail=f"Video duration ({duration}s) exceeds maximum allowed ({downloader.max_duration_minutes * 60}s)"
+            duration_minutes = duration / 60
+            max_minutes = downloader.max_duration_minutes
+            raise AIServiceError(
+                code=ErrorCode.AUDIO_TOO_LONG,
+                message=f"영상 길이({int(duration_minutes)}분)가 최대 허용 시간({max_minutes}분)을 초과했습니다. 더 짧은 영상을 시도해주세요!",
+                status_code=422,
+                details={
+                    "video_id": video_id,
+                    "duration_minutes": round(duration_minutes, 1),
+                    "max_duration_minutes": max_minutes
+                }
             )
-        raise HTTPException(
+        raise AIServiceError(
+            code=ErrorCode.STT_ERROR,
+            message=f"영상 오디오를 다운로드할 수 없습니다. 영상이 비공개이거나 접근이 제한되었을 수 있습니다.",
             status_code=400,
-            detail=f"Failed to download audio from video: {video_id}"
+            details={"video_id": video_id}
         )
 
     logger.info(

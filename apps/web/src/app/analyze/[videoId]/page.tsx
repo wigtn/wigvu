@@ -5,8 +5,10 @@ import { useRouter, useParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { AnalysisView } from "@/components/analysis-view";
 import { LoadingState } from "@/components/loading-state";
+import { FullPageError } from "@/components/error-display";
 import { VideoAnalysis, AnalyzeResponse } from "@/types/analysis";
 import { analysisStore } from "@/store/analysis-store";
+import { ApiError } from "@/lib/errors";
 import { AlertCircle, RotateCcw } from "lucide-react";
 
 async function analyzeVideo(url: string): Promise<VideoAnalysis> {
@@ -19,7 +21,8 @@ async function analyzeVideo(url: string): Promise<VideoAnalysis> {
   const data: AnalyzeResponse = await response.json();
 
   if (!data.success || !data.data) {
-    throw new Error(data.error?.message || "Analysis failed");
+    // ApiError로 변환하여 사용자 친화적 메시지 사용
+    throw ApiError.fromResponse(data, response.status);
   }
 
   return data.data;
@@ -78,24 +81,19 @@ export default function AnalyzePage() {
     );
   }
 
-  // 에러 상태
+  // 에러 상태 - ApiError 기반의 사용자 친화적 에러 표시
   if (mutation.isError) {
+    const error = mutation.error instanceof ApiError
+      ? mutation.error
+      : ApiError.fromFetchError(mutation.error);
+
     return (
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="bento-card p-8 max-w-md w-full text-center">
-          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">분석 실패</h2>
-          <p className="text-muted-foreground mb-6">
-            {mutation.error instanceof Error
-              ? mutation.error.message
-              : "알 수 없는 오류가 발생했습니다"}
-          </p>
-          <button onClick={handleReset} className="btn-primary">
-            <RotateCcw className="w-4 h-4" />
-            처음으로
-          </button>
-        </div>
-      </div>
+      <FullPageError
+        error={error}
+        onRetry={() => mutation.reset()}
+        onReset={handleReset}
+        autoRedirectDelay={error.shouldRedirect ? 5 : 0}
+      />
     );
   }
 
