@@ -75,6 +75,7 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [testLoading, setTestLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isFading, setIsFading] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // 무한 캐러셀: 실제 슬라이드 + 앞뒤 클론
@@ -88,47 +89,42 @@ export default function Home() {
     });
   }, []);
 
-  const goToSlide = useCallback((index: number) => {
+  // 페이드 전환 헬퍼
+  const FADE_DURATION = 300; // 페이드 시간 (ms)
+
+  const fadeToSlide = useCallback((targetSlide: number) => {
     if (isTransitioning) return;
-    setCurrentSlide(index);
-    scrollToIndex(index + 1); // 클론 오프셋
-  }, [isTransitioning, scrollToIndex]);
+    if (targetSlide === currentSlide) return;
+
+    setIsTransitioning(true);
+    setIsFading(true);
+
+    setTimeout(() => {
+      scrollToIndex(targetSlide + 1, false); // 클론 오프셋
+      setCurrentSlide(targetSlide);
+
+      requestAnimationFrame(() => {
+        setIsFading(false);
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, FADE_DURATION);
+      });
+    }, FADE_DURATION);
+  }, [currentSlide, isTransitioning, scrollToIndex]);
+
+  const goToSlide = useCallback((index: number) => {
+    fadeToSlide(index);
+  }, [fadeToSlide]);
 
   const nextSlide = useCallback(() => {
-    if (isTransitioning) return;
-
-    if (currentSlide === TOTAL_SLIDES - 1) {
-      // 마지막 → 클론(첫번째)로 스크롤 후 실제 첫번째로 점프
-      setIsTransitioning(true);
-      scrollToIndex(TOTAL_SLIDES + 1); // 클론-첫번째 위치
-      setTimeout(() => {
-        scrollToIndex(1, false); // 실제 첫번째로 즉시 점프
-        setCurrentSlide(0);
-        setIsTransitioning(false);
-      }, 500);
-    } else {
-      setCurrentSlide(currentSlide + 1);
-      scrollToIndex(currentSlide + 2);
-    }
-  }, [currentSlide, isTransitioning, scrollToIndex]);
+    const next = currentSlide === TOTAL_SLIDES - 1 ? 0 : currentSlide + 1;
+    fadeToSlide(next);
+  }, [currentSlide, fadeToSlide]);
 
   const prevSlide = useCallback(() => {
-    if (isTransitioning) return;
-
-    if (currentSlide === 0) {
-      // 첫번째 → 클론(마지막)으로 스크롤 후 실제 마지막으로 점프
-      setIsTransitioning(true);
-      scrollToIndex(0); // 클론-마지막 위치
-      setTimeout(() => {
-        scrollToIndex(TOTAL_SLIDES, false); // 실제 마지막으로 즉시 점프
-        setCurrentSlide(TOTAL_SLIDES - 1);
-        setIsTransitioning(false);
-      }, 500);
-    } else {
-      setCurrentSlide(currentSlide - 1);
-      scrollToIndex(currentSlide);
-    }
-  }, [currentSlide, isTransitioning, scrollToIndex]);
+    const prev = currentSlide === 0 ? TOTAL_SLIDES - 1 : currentSlide - 1;
+    fadeToSlide(prev);
+  }, [currentSlide, fadeToSlide]);
 
   // 초기 위치 설정 (클론 오프셋)
   useEffect(() => {
@@ -164,7 +160,7 @@ export default function Home() {
 
   const mutation = useMutation({
     mutationFn: analyzeVideo,
-    onSuccess: (data) => {
+    onSuccess: (data: VideoAnalysis) => {
       analysisStore.set(data);
       router.push(`/analyze/${data.videoId}`);
     },
@@ -227,14 +223,14 @@ export default function Home() {
             <span className="font-bold text-lg">WIGTN</span>
           </div>
           {/* 테스트 버튼 (개발용) */}
-          <button
+          {/* <button
             onClick={() => setTestLoading(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-md hover:border-accent transition-colors"
             title="로딩 테스트"
           >
             <FlaskConical className="w-4 h-4" />
             <span className="hidden sm:inline">로딩 테스트</span>
-          </button>
+          </button> */}
         </div>
       </header>
 
@@ -242,7 +238,9 @@ export default function Home() {
       <div className="h-screen shrink-0 relative pt-16">
         <div
           ref={carouselRef}
-          className="h-full flex overflow-x-hidden"
+          className={`h-full flex overflow-x-hidden transition-opacity duration-200 ${
+            isFading ? "opacity-0" : "opacity-100"
+          }`}
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -252,18 +250,25 @@ export default function Home() {
           <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-6 md:mb-12">
-                <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">사용 방법</h2>
+                <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">
+                  사용 방법
+                </h2>
                 <p className="text-sm md:text-base text-muted-foreground">3단계로 간단하게</p>
               </div>
+
               <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
                 {steps.map((step, index) => (
                   <div key={index} className="flex items-center md:items-start gap-3 md:gap-4">
                     <div className="flex flex-col items-center text-center">
-                      <div className="w-14 h-14 md:w-20 md:h-20 rounded-xl md:rounded-2xl bg-foreground text-background flex items-center justify-center font-bold text-xl md:text-3xl mb-2 md:mb-4">
+                      <div className="w-14 h-14 md:w-20 md:h-20 rounded-xl md:rounded-2xl bg-foreground text-background flex items-center justify-center font-bold text-xl md:text-3xl mb-2 md:mb-4 transition-transform hover:scale-110">
                         {step.number}
                       </div>
-                      <h3 className="font-semibold text-base md:text-lg mb-1 md:mb-2">{step.title}</h3>
-                      <p className="text-xs md:text-sm text-muted-foreground max-w-32 md:max-w-37.5">{step.description}</p>
+                      <h3 className="font-semibold text-base md:text-lg mb-1 md:mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-xs md:text-sm text-muted-foreground max-w-32 md:max-w-37.5">
+                        {step.description}
+                      </p>
                     </div>
                     {index < steps.length - 1 && (
                       <ArrowRight className="hidden md:block w-6 h-6 text-muted-foreground shrink-0 mt-7" />
@@ -835,7 +840,7 @@ export default function Home() {
           </section>
 
           {/* Slide 2: Features */}
-          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6 bg-(--background-elevated)">
+          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6 bg-background -mt-16">
             <div className="max-w-5xl mx-auto w-full">
               <div className="text-center mb-4 md:mb-8">
                 <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">
@@ -854,7 +859,7 @@ export default function Home() {
                       key={index}
                       onMouseEnter={() => setHoveredFeature(index)}
                       onMouseLeave={() => setHoveredFeature(null)}
-                      className={`bento-card p-3 md:p-6 cursor-default transition-all duration-300 ${
+                      className={`bento-card p-3 md:p-6 cursor-default transition-all duration-200 ${
                         hoveredFeature === index
                           ? "border-accent/50 bg-accent/5 scale-[1.02] shadow-lg shadow-accent/10"
                           : ""
@@ -862,7 +867,7 @@ export default function Home() {
                     >
                       <div className="flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-4 text-center md:text-left">
                         <div
-                          className={`w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+                          className={`w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
                             hoveredFeature === index
                               ? "bg-accent text-background scale-110"
                               : "bg-accent/10 text-accent"
@@ -888,7 +893,7 @@ export default function Home() {
           </section>
 
           {/* Slide 3: Steps */}
-          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6">
+          <section className="relative w-screen h-full shrink-0 flex flex-col items-center justify-center px-4 md:px-6 -mt-16">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-6 md:mb-12">
                 <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-3">

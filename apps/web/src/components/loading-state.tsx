@@ -13,14 +13,32 @@ const MESSAGES = [
 
 export function LoadingState() {
   const [messageIndex, setMessageIndex] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
+  // 메시지 로테이션
   useEffect(() => {
     const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % MESSAGES.length);
+      setMessageIndex((prev: number) => (prev + 1) % MESSAGES.length);
     }, 2500);
 
     return () => clearInterval(interval);
   }, []);
+
+  // 경과 시간 타이머
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsedTime((prev: number) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // 시간 포맷 (mm:ss)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="bento-card p-8 text-center max-w-md w-full">
@@ -120,8 +138,13 @@ export function LoadingState() {
       </svg>
 
       {/* Rotating Message */}
-      <p className="text-lg font-medium text-foreground">
+      <p className="text-lg font-medium text-foreground mb-3">
         {MESSAGES[messageIndex]}
+      </p>
+
+      {/* 경과 시간 타이머 */}
+      <p className="text-sm text-muted-foreground">
+        경과 시간: <span className="font-mono text-accent">{formatTime(elapsedTime)}</span>
       </p>
     </div>
   );
