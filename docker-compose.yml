@@ -33,6 +33,7 @@ services:
       - PORT=4000
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - AI_SERVICE_URL=http://ai:5000
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - STT_MAX_DURATION_MINUTES=${STT_MAX_DURATION_MINUTES:-20}
     depends_on:
       ai:
@@ -55,6 +56,7 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - STT_API_URL=${STT_API_URL:-http://work.soundmind.life:12321}
       - STT_MAX_DURATION_MINUTES=${STT_MAX_DURATION_MINUTES:-120}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}

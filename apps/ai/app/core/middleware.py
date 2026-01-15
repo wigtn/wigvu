@@ -5,9 +5,55 @@ import uuid
 import structlog
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from starlette.responses import Response
+from starlette.responses import Response, JSONResponse
+
+from app.config import get_settings
 
 logger = structlog.get_logger()
+
+# Paths that don't require API key authentication
+PUBLIC_PATHS = {"/health", "/docs", "/redoc", "/openapi.json"}
+
+
+class ApiKeyMiddleware(BaseHTTPMiddleware):
+    """Validate X-Internal-API-Key header for protected endpoints"""
+
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: RequestResponseEndpoint
+    ) -> Response:
+        settings = get_settings()
+
+        # Skip if internal_api_key is not configured (development mode)
+        if not settings.internal_api_key:
+            return await call_next(request)
+
+        # Skip public paths
+        if request.url.path in PUBLIC_PATHS:
+            return await call_next(request)
+
+        # Validate API key
+        api_key = request.headers.get("X-Internal-API-Key", "")
+
+        if api_key != settings.internal_api_key:
+            logger.warning(
+                "api_key_invalid",
+                path=request.url.path,
+                client_ip=request.client.host if request.client else "unknown"
+            )
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False,
+                    "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Invalid or missing API key"
+                    }
+                }
+            )
+
+        return await call_next(request)
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):

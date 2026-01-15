@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     openai_api_key: str
     openai_model: str = "gpt-4o-mini"
 
+    # Internal API Key (for NestJS Gateway authentication)
+    internal_api_key: str = ""  # Empty = disabled (development mode)
+
     # External STT API
     stt_api_url: str = "http://work.soundmind.life:12321"
     stt_max_duration_minutes: int = 120
