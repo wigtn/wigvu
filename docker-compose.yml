@@ -9,11 +9,9 @@ services:
     environment:
       - NODE_ENV=production
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - AI_SERVICE_URL=http://ai:5000
-      - STT_API_URL=http://ai:5000
+      - API_URL=http://api:4000
     depends_on:
-      ai:
+      api:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -35,6 +33,7 @@ services:
       - PORT=4000
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - AI_SERVICE_URL=http://ai:5000
+      - STT_MAX_DURATION_MINUTES=${STT_MAX_DURATION_MINUTES:-20}
     depends_on:
       ai:
         condition: service_healthy
