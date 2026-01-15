@@ -17,6 +17,7 @@ import {
   Play,
   Mic,
   ArrowRight,
+  ArrowDown,
   ChevronLeft,
   ChevronRight,
   FlaskConical,
@@ -1033,22 +1034,36 @@ export default function Home() {
             className="btn-primary px-6 py-2.5 md:px-8 md:py-3 text-sm md:text-base shadow-lg shadow-black/30 hover:shadow-xl hover:shadow-black/40 transition-all"
           >
             지금 시작하기
-            <ArrowRight className="w-4 h-4" />
+            <ArrowDown className="w-4 h-4" />
           </button>
         </div>
 
         {/* 사이드 네비게이션 화살표 */}
         <button
           onClick={prevSlide}
-          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 p-3 md:p-4 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-muted hover:scale-110 transition-all"
+          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 p-2 hover:scale-110 transition-all"
         >
-          <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
+          <ChevronLeft
+            className="w-8 h-8 md:w-10 md:h-10 text-white/80 hover:text-white"
+            strokeWidth={3}
+            style={{
+              filter:
+                "drop-shadow(1px 1px 0px rgba(0,0,0,0.5)) drop-shadow(-1px -1px 0px rgba(255,255,255,0.2))",
+            }}
+          />
         </button>
         <button
           onClick={nextSlide}
-          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-40 p-3 md:p-4 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-muted hover:scale-110 transition-all"
+          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-40 p-2 hover:scale-110 transition-all"
         >
-          <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
+          <ChevronRight
+            className="w-8 h-8 md:w-10 md:h-10 text-white/80 hover:text-white"
+            strokeWidth={3}
+            style={{
+              filter:
+                "drop-shadow(1px 1px 0px rgba(0,0,0,0.5)) drop-shadow(-1px -1px 0px rgba(255,255,255,0.2))",
+            }}
+          />
         </button>
 
         {/* 하단 인디케이터 */}
@@ -1092,7 +1107,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-background/80 text-gray-300">
+      <footer className="text-gray-300">
         {/* <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-4"> */}
         {/* 회사 정보 */}
@@ -1182,7 +1197,7 @@ export default function Home() {
           </div> */}
 
         {/* 하단 저작권 */}
-        <div className="mt-8 border-t border-gray-800 pt-8 text-center text-sm">
+        <div className="py-8 text-center text-sm">
           <p>&copy; 2026 WIGTN. All rights reserved.</p>
         </div>
         {/* </div> */}
