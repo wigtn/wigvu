@@ -8,8 +8,7 @@ import { STT } from "../constants";
 const logger = createLogger("Env");
 
 interface EnvConfig {
-  YOUTUBE_API_KEY: string;
-  /** NestJS API Gateway URL */
+  /** NestJS API Gateway URL (Required) */
   API_URL: string;
   /** @deprecated use API_URL instead - AI 서버 직접 호출용 (fallback) */
   AI_SERVICE_URL: string;
@@ -31,14 +30,12 @@ function validateRequiredEnv(key: string): string {
  * 환경변수 검증 및 기본값 설정
  */
 export function getEnvConfig(): EnvConfig {
-  // API_URL: NestJS API Gateway (권장)
+  // API_URL: NestJS API Gateway (필수)
   // AI_SERVICE_URL: AI 서버 직접 호출 (deprecated, fallback용)
-  const apiUrl = process.env.API_URL || "";
   const aiServiceUrl = process.env.AI_SERVICE_URL || "";
 
   return {
-    YOUTUBE_API_KEY: validateRequiredEnv("YOUTUBE_API_KEY"),
-    API_URL: apiUrl,
+    API_URL: validateRequiredEnv("API_URL"),
     AI_SERVICE_URL: aiServiceUrl,
     STT_MAX_DURATION_MINUTES: parseInt(
       process.env.STT_MAX_DURATION_MINUTES ||
