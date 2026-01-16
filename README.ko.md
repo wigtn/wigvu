@@ -1,12 +1,16 @@
+<div align="center">
+
 # QuickPreview
 
 YouTube 영상의 자막을 추출하고 한국어로 번역하여 실시간으로 동기화된 스크립트를 제공하는 서비스입니다.
+
+[English](./README.md) | [한국어](./README.ko.md)
 
 ![CI](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/ci.yml/badge.svg)
 ![CD](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/cd.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[English](./README.md)
+</div>
 
 ---
 

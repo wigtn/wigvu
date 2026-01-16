@@ -1,12 +1,16 @@
-# QuickPreview
+<div align="center">
+
+# WIGTN Player - WIGPL !
 
 YouTube subtitle extraction, translation, and real-time synchronization service.
+
+[English](./README.md) | [한국어](./README.ko.md)
 
 ![CI](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/ci.yml/badge.svg)
 ![CD](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/cd.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[한국어](./README.ko.md)
+</div>
 
 ---
 
