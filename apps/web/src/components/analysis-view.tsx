@@ -10,13 +10,7 @@ import { ScriptPanel } from "@/components/script-panel";
 import { KeyMomentsBar } from "@/components/key-moments-bar";
 import { UrlInput } from "@/components/url-input";
 import { FloatingMemo } from "@/components/floating-memo";
-import {
-  Clock,
-  Eye,
-  ThumbsUp,
-  AlertCircle,
-  NotebookPen,
-} from "lucide-react";
+import { Clock, Eye, ThumbsUp, AlertCircle, NotebookPen } from "lucide-react";
 
 interface AnalysisViewProps {
   analysis: VideoAnalysis;
@@ -144,7 +138,7 @@ export function AnalysisView({
             onClick={onReset}
             className="text-lg font-bold tracking-tight text-accent hover:opacity-80 transition-opacity"
           >
-            QuickPreview
+            WIGTN
           </button>
 
           {/* URL Input */}

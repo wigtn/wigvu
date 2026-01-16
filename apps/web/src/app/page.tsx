@@ -223,7 +223,7 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 shrink-0 px-6 py-4 bg-background/80 backdrop-blur-sm border-b border-border z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-accent" />
+            {/* <Zap className="w-5 h-5 text-accent" /> */}
             <span className="font-bold text-lg">WIGTN</span>
           </div>
           {/* 테스트 버튼 (개발용) */}

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QuickPreview | YouTube Video Analysis",
+  title: "WIGTN | QuickPreview",
   description: "AI-powered YouTube video analysis - decide what to watch",
 };
 
