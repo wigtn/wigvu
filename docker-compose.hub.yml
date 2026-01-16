@@ -1,4 +1,4 @@
-# Docker Hub Compose - Uses pre-built images from Docker Hub
+# GHCR Compose - Uses pre-built images from GitHub Container Registry
 # Usage: docker compose -f docker-compose.hub.yml up -d
 
 services:
@@ -32,7 +32,7 @@ services:
       - app-network
 
   web:
-    image: morirokim/wigtn-web:latest
+    image: ghcr.io/wigtn/wigtn-web:latest
     ports:
       - "3000:3000"
     environment:
@@ -61,7 +61,7 @@ services:
         max-file: "3"
 
   api:
-    image: morirokim/wigtn-api:latest
+    image: ghcr.io/wigtn/wigtn-api:latest
     ports:
       - "4000:4000"
     environment:
@@ -99,7 +99,7 @@ services:
         max-file: "3"
 
   ai:
-    image: morirokim/wigtn-ai:latest
+    image: ghcr.io/wigtn/wigtn-ai:latest
     ports:
       - "5000:5000"
     environment:
