@@ -194,6 +194,7 @@ jobs:
               git pull origin main && \
               docker compose -f docker-compose.hub.yml pull && \
               docker compose -f docker-compose.hub.yml up -d --remove-orphans && \
+              docker compose -f docker-compose.hub.yml restart nginx && \
               docker system prune -f
             "
 
