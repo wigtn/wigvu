@@ -3,14 +3,9 @@
 // CI/CD Test: 2026-01-16 v3
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
-import { LoadingState } from "@/components/loading-state";
-import { ErrorModal } from "@/components/error-display";
 import { HeroSection } from "@/components/hero-section";
-import { VideoAnalysis, AnalyzeResponse } from "@/types/analysis";
-import { analysisStore } from "@/store/analysis-store";
-import { ApiError } from "@/lib/errors";
+import { extractVideoId } from "@/lib/youtube";
 import {
   Zap,
   Languages,
@@ -74,26 +69,11 @@ const steps = [
     number: "3",
     icon: CheckCircle,
     title: "결과 확인",
-    description: "원문·번역 스크립트, 주제별 구간 분리, AI 요약을 한눈에 확인하세요",
+    description:
+      "원문·번역 스크립트, 주제별 구간 분리, AI 요약을 한눈에 확인하세요",
   },
 ];
 
-async function analyzeVideo(url: string): Promise<VideoAnalysis> {
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
-  });
-
-  const data: AnalyzeResponse = await response.json();
-
-  if (!data.success || !data.data) {
-    // ApiError로 변환하여 사용자 친화적 메시지 사용
-    throw ApiError.fromResponse(data, response.status);
-  }
-
-  return data.data;
-}
 
 export default function Home() {
   const router = useRouter();
@@ -207,45 +187,29 @@ export default function Home() {
     inputSection?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  const mutation = useMutation({
-    mutationFn: analyzeVideo,
-    onSuccess: (data: VideoAnalysis) => {
-      analysisStore.set(data);
-      router.push(`/analyze/${data.videoId}`);
-    },
-  });
-
   const handleAnalyze = (url: string) => {
-    mutation.mutate(url);
+    const videoId = extractVideoId(url);
+    if (videoId) {
+      // URL을 sessionStorage에 저장하고 분석 페이지로 이동
+      sessionStorage.setItem("pendingAnalysisUrl", url);
+      router.push(`/analyze/${videoId}`);
+    }
   };
 
-  const handleReset = () => {
-    mutation.reset();
-  };
-
-  // 로딩 중 (실제 또는 테스트)
-  if (mutation.isPending || testLoading) {
+  // 로딩 테스트용
+  if (testLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
-        <LoadingState />
-        {testLoading && (
-          <button
-            onClick={() => setTestLoading(false)}
-            className="btn-ghost text-sm"
-          >
-            테스트 종료
-          </button>
-        )}
+        <div className="text-muted-foreground">로딩 테스트 모드</div>
+        <button
+          onClick={() => setTestLoading(false)}
+          className="btn-ghost text-sm"
+        >
+          테스트 종료
+        </button>
       </div>
     );
   }
-
-  // 에러 상태 - ErrorModal로 표시
-  const errorForModal = mutation.isError
-    ? (mutation.error instanceof ApiError
-        ? mutation.error
-        : ApiError.fromFetchError(mutation.error))
-    : null;
 
   // 초기 상태: 랜딩 페이지 (가로 캐러셀 + 스크롤 URL 입력)
   return (
@@ -264,14 +228,13 @@ export default function Home() {
             <span className="font-bold text-lg">WIGTN</span>
           </div>
           {/* 테스트 버튼 (개발용) */}
-          {/* <button
+          <button
             onClick={() => setTestLoading(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-md hover:border-accent transition-colors"
             title="로딩 테스트"
           >
-            <FlaskConical className="w-4 h-4" />
             <span className="hidden sm:inline">로딩 테스트</span>
-          </button> */}
+          </button>
         </div>
       </header>
 
@@ -317,7 +280,9 @@ export default function Home() {
                       >
                         {/* 콘텐츠 */}
                         <div
-                          className={`flex-1 ${isEven ? "md:text-right" : "md:text-left"}`}
+                          className={`flex-1 ${
+                            isEven ? "md:text-right" : "md:text-left"
+                          }`}
                         >
                           <h3 className="font-semibold text-lg md:text-xl mb-1">
                             {step.title}
@@ -363,10 +328,7 @@ export default function Home() {
                 {features.map((feature, index) => {
                   const Icon = feature.icon;
                   return (
-                    <div
-                      key={index}
-                      className="bento-card p-3 md:p-6"
-                    >
+                    <div key={index} className="bento-card p-3 md:p-6">
                       <div className="flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-4 text-center md:text-left">
                         <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 bg-accent/10 text-accent">
                           <Icon className="w-5 h-5 md:w-6 md:h-6" />
@@ -427,7 +389,9 @@ export default function Home() {
                       >
                         {/* 콘텐츠 */}
                         <div
-                          className={`flex-1 ${isEven ? "md:text-right" : "md:text-left"}`}
+                          className={`flex-1 ${
+                            isEven ? "md:text-right" : "md:text-left"
+                          }`}
                         >
                           <h3 className="font-semibold text-lg md:text-xl mb-1">
                             {step.title}
@@ -529,10 +493,7 @@ export default function Home() {
             </p>
           </div>
 
-          <UrlInput
-            onAnalyze={handleAnalyze}
-            isLoading={mutation.isPending}
-          />
+          <UrlInput onAnalyze={handleAnalyze} isLoading={false} />
         </div>
       </section>
 
@@ -633,16 +594,6 @@ export default function Home() {
         {/* </div> */}
       </footer>
 
-      {/* 에러 모달 */}
-      {errorForModal && (
-        <ErrorModal
-          isOpen={mutation.isError}
-          onClose={() => mutation.reset()}
-          error={errorForModal}
-          onReset={handleReset}
-          autoRedirectDelay={5}
-        />
-      )}
     </div>
   );
 }

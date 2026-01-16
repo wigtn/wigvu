@@ -1,24 +1,31 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { StepState, AnalysisStep } from "@/hooks/use-analysis-stream";
 
-const MESSAGES = [
-  "AI가 분석 중입니다",
-  "영상 내용을 파악하고 있어요",
-  "핵심 장면을 찾고 있습니다",
-  "키워드를 추출하는 중이에요",
-  "자막을 분석하고 있습니다",
-];
+const STEP_ICONS: Record<AnalysisStep, string> = {
+  metadata: "📋",
+  transcript: "📝",
+  translation: "🌐",
+  analysis: "🤖",
+  complete: "✨",
+};
 
-const ALMOST_DONE_MESSAGE = "거의 다 됐어요!";
-const THREE_MINUTES = 180; // 3분 = 180초
+const STEP_LABELS: Record<AnalysisStep, string> = {
+  metadata: "영상 정보",
+  transcript: "자막 추출",
+  translation: "번역",
+  analysis: "AI 분석",
+  complete: "완료",
+};
 
-export function LoadingState() {
-  const [messageIndex, setMessageIndex] = useState(() =>
-    Math.floor(Math.random() * MESSAGES.length)
-  );
+interface LoadingStateProps {
+  steps?: StepState[];
+  currentStep?: AnalysisStep | null;
+}
+
+export function LoadingState({ steps, currentStep }: LoadingStateProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [isFading, setIsFading] = useState(false);
   const elapsedTimeRef = useRef(0);
 
   // 경과 시간 타이머
@@ -31,27 +38,6 @@ export function LoadingState() {
     return () => clearInterval(timer);
   }, []);
 
-  // 메시지 로테이션 (3분 전에만, 페이드 애니메이션 포함)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (elapsedTimeRef.current >= THREE_MINUTES) return;
-
-      setIsFading(true);
-      setTimeout(() => {
-        setMessageIndex((prev) => {
-          let newIndex;
-          do {
-            newIndex = Math.floor(Math.random() * MESSAGES.length);
-          } while (newIndex === prev && MESSAGES.length > 1);
-          return newIndex;
-        });
-        setIsFading(false);
-      }, 300);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   // 시간 포맷 (mm:ss)
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -59,208 +45,158 @@ export function LoadingState() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // 진행률 계산
+  const getProgress = () => {
+    if (!steps) return 0;
+    const doneSteps = steps.filter((s) => s.status === "done" || s.status === "skipped").length;
+    // complete 단계는 제외하고 계산 (4단계)
+    const totalSteps = steps.length - 1;
+    return Math.round((doneSteps / totalSteps) * 100);
+  };
+
   return (
-    <div className="bento-card p-8 text-center max-w-md w-full">
-      {/* Animated SVG */}
-      <svg
-        viewBox="0 0 200 200"
-        className="w-32 h-32 mx-auto mb-6"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <style>
-            {`
-              @keyframes pulse1 {
-                0%, 100% { transform: scale(1); opacity: 0.3; }
-                50% { transform: scale(1.15); opacity: 0.6; }
-              }
-              @keyframes pulse2 {
-                0%, 100% { transform: scale(1); opacity: 0.4; }
-                50% { transform: scale(1.1); opacity: 0.7; }
-              }
-              @keyframes pulse3 {
-                0%, 100% { transform: scale(1); opacity: 0.5; }
-                50% { transform: scale(1.05); opacity: 0.8; }
-              }
-              @keyframes rotateRing {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-              @keyframes dash {
-                0% { stroke-dashoffset: 300; }
-                50% { stroke-dashoffset: 100; }
-                100% { stroke-dashoffset: 300; }
-              }
-              @keyframes barPulse1 {
-                0%, 100% { height: 20px; opacity: 0.5; }
-                50% { height: 40px; opacity: 1; }
-              }
-              @keyframes barPulse2 {
-                0%, 100% { height: 30px; opacity: 0.6; }
-                50% { height: 50px; opacity: 1; }
-              }
-              @keyframes barPulse3 {
-                0%, 100% { height: 25px; opacity: 0.5; }
-                50% { height: 45px; opacity: 1; }
-              }
-              @keyframes barPulse4 {
-                0%, 100% { height: 35px; opacity: 0.7; }
-                50% { height: 55px; opacity: 1; }
-              }
-              @keyframes barPulse5 {
-                0%, 100% { height: 22px; opacity: 0.5; }
-                50% { height: 42px; opacity: 1; }
-              }
-              .ring1 { animation: pulse1 2s ease-in-out infinite; transform-origin: center; }
-              .ring2 { animation: pulse2 2s ease-in-out infinite 0.3s; transform-origin: center; }
-              .ring3 { animation: pulse3 2s ease-in-out infinite 0.6s; transform-origin: center; }
-              .rotating-ring { animation: rotateRing 3s linear infinite; transform-origin: center; }
-              .dash-ring { animation: dash 2s ease-in-out infinite; }
-              .bar1 { animation: barPulse1 1s ease-in-out infinite; }
-              .bar2 { animation: barPulse2 1s ease-in-out infinite 0.1s; }
-              .bar3 { animation: barPulse3 1s ease-in-out infinite 0.2s; }
-              .bar4 { animation: barPulse4 1s ease-in-out infinite 0.3s; }
-              .bar5 { animation: barPulse5 1s ease-in-out infinite 0.4s; }
-            `}
-          </style>
-        </defs>
+    <div className="bento-card p-8 text-center max-w-lg w-full">
+      {/* 단계별 진행 상황 */}
+      {steps && (
+        <div className="mb-6">
+          {/* 프로그레스 바 */}
+          <div className="relative h-2 bg-muted rounded-full overflow-hidden mb-6">
+            <div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-accent to-accent/80 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${getProgress()}%` }}
+            />
+            {/* 애니메이션 효과 */}
+            <div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+              style={{
+                width: `${getProgress()}%`,
+                animation: "shimmer 2s infinite",
+              }}
+            />
+          </div>
 
-        {/* 배경 펄스 링 */}
-        <circle
-          className="ring1"
-          cx="100"
-          cy="100"
-          r="70"
-          fill="var(--accent)"
-          opacity="0.3"
-        />
-        <circle
-          className="ring2"
-          cx="100"
-          cy="100"
-          r="55"
-          fill="var(--accent)"
-          opacity="0.4"
-        />
-        <circle
-          className="ring3"
-          cx="100"
-          cy="100"
-          r="40"
-          fill="var(--accent)"
-          opacity="0.5"
-        />
+          {/* 단계 표시 */}
+          <div className="flex justify-between items-start gap-1 relative">
+            {steps
+              .filter((s) => s.step !== "complete")
+              .map((step, index, arr) => (
+                <div
+                  key={step.step}
+                  className={`flex-1 flex flex-col items-center transition-all duration-300 ${
+                    step.status === "active"
+                      ? "scale-105"
+                      : step.status === "done"
+                        ? "opacity-100"
+                        : step.status === "skipped"
+                          ? "opacity-50"
+                          : "opacity-40"
+                  }`}
+                >
+                  {/* 연결선 (아이콘 뒤에) */}
+                  {index < arr.length - 1 && (
+                    <div
+                      className={`absolute h-0.5 top-5 -z-10 transition-colors duration-300 ${
+                        step.status === "done" || step.status === "skipped"
+                          ? "bg-green-500/50"
+                          : "bg-muted"
+                      }`}
+                      style={{
+                        left: `calc(${(100 / arr.length) * index}% + ${100 / arr.length / 2}%)`,
+                        width: `${100 / arr.length}%`,
+                      }}
+                    />
+                  )}
 
-        {/* 회전하는 대시 링 */}
-        <g className="rotating-ring">
-          <circle
-            className="dash-ring"
-            cx="100"
-            cy="100"
-            r="75"
-            fill="none"
-            stroke="var(--accent)"
-            strokeWidth="3"
-            strokeDasharray="50 30"
-            strokeLinecap="round"
-          />
-        </g>
+                  {/* 아이콘 */}
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
+                      step.status === "active"
+                        ? "bg-accent text-white shadow-lg shadow-accent/30 animate-pulse"
+                        : step.status === "done"
+                          ? "bg-green-500/20 text-green-500"
+                          : step.status === "skipped"
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {step.status === "done" ? (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    ) : step.status === "skipped" ? (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                        />
+                      </svg>
+                    ) : (
+                      <span className="text-lg">{STEP_ICONS[step.step]}</span>
+                    )}
+                  </div>
 
-        {/* 중앙 오디오 파형 바 */}
-        <g transform="translate(100, 100)">
-          <rect
-            className="bar1"
-            x="-30"
-            y="-20"
-            width="6"
-            height="20"
-            rx="3"
-            fill="var(--foreground)"
-            style={{ transformOrigin: "center bottom" }}
-          />
-          <rect
-            className="bar2"
-            x="-18"
-            y="-30"
-            width="6"
-            height="30"
-            rx="3"
-            fill="var(--foreground)"
-            style={{ transformOrigin: "center bottom" }}
-          />
-          <rect
-            className="bar3"
-            x="-6"
-            y="-25"
-            width="6"
-            height="25"
-            rx="3"
-            fill="var(--foreground)"
-            style={{ transformOrigin: "center bottom" }}
-          />
-          <rect
-            className="bar4"
-            x="6"
-            y="-35"
-            width="6"
-            height="35"
-            rx="3"
-            fill="var(--foreground)"
-            style={{ transformOrigin: "center bottom" }}
-          />
-          <rect
-            className="bar5"
-            x="18"
-            y="-22"
-            width="6"
-            height="22"
-            rx="3"
-            fill="var(--foreground)"
-            style={{ transformOrigin: "center bottom" }}
-          />
-        </g>
-      </svg>
+                  {/* 라벨 */}
+                  <span
+                    className={`text-xs font-medium ${
+                      step.status === "active"
+                        ? "text-accent"
+                        : step.status === "done"
+                          ? "text-green-500"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {STEP_LABELS[step.step]}
+                  </span>
+                </div>
+              ))}
+          </div>
 
-      {/* Rotating Message with fade animation */}
-      <div className="h-8 mb-3 flex items-center justify-center">
-        <p
-          className={`text-lg font-medium text-foreground transition-opacity duration-300 ${
-            isFading ? "opacity-0" : "opacity-100"
-          }`}
-        >
-          {elapsedTime >= THREE_MINUTES
-            ? ALMOST_DONE_MESSAGE
-            : MESSAGES[messageIndex]}
-          {/* Animated dots */}
-          {elapsedTime < THREE_MINUTES && <AnimatedDots />}
-        </p>
-      </div>
+          {/* 현재 단계 메시지 */}
+          {currentStep && currentStep !== "complete" && (
+            <div className="mt-6 py-3 px-4 bg-accent/10 rounded-lg border border-accent/20">
+              <p className="text-sm text-foreground flex items-center justify-center gap-2">
+                <span className="inline-block w-2 h-2 bg-accent rounded-full animate-pulse" />
+                {steps.find((s) => s.step === currentStep)?.message}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 경과 시간 타이머 */}
       <p className="text-sm text-muted-foreground">
         경과 시간:{" "}
         <span className="font-mono text-accent">{formatTime(elapsedTime)}</span>
       </p>
+
+      {/* Shimmer 애니메이션 */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(200%);
+          }
+        }
+      `}</style>
     </div>
-  );
-}
-
-// 점 애니메이션 컴포넌트
-function AnimatedDots() {
-  const [dotCount, setDotCount] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDotCount((prev) => (prev + 1) % 4);
-    }, 400);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <span className="inline-block w-6 text-left">
-      {".".repeat(dotCount)}
-    </span>
   );
 }
