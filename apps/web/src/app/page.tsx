@@ -74,7 +74,6 @@ const steps = [
   },
 ];
 
-
 export default function Home() {
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -197,19 +196,19 @@ export default function Home() {
   };
 
   // 로딩 테스트용
-  if (testLoading) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
-        <div className="text-muted-foreground">로딩 테스트 모드</div>
-        <button
-          onClick={() => setTestLoading(false)}
-          className="btn-ghost text-sm"
-        >
-          테스트 종료
-        </button>
-      </div>
-    );
-  }
+  // if (testLoading) {
+  //   return (
+  //     <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
+  //       <div className="text-muted-foreground">로딩 테스트 모드</div>
+  //       <button
+  //         onClick={() => setTestLoading(false)}
+  //         className="btn-ghost text-sm"
+  //       >
+  //         테스트 종료
+  //       </button>
+  //     </div>
+  //   );
+  // }
 
   // 초기 상태: 랜딩 페이지 (가로 캐러셀 + 스크롤 URL 입력)
   return (
@@ -228,13 +227,13 @@ export default function Home() {
             <span className="font-bold text-lg">WIGTN</span>
           </div>
           {/* 테스트 버튼 (개발용) */}
-          <button
+          {/* <button
             onClick={() => setTestLoading(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-md hover:border-accent transition-colors"
             title="로딩 테스트"
           >
             <span className="hidden sm:inline">로딩 테스트</span>
-          </button>
+          </button> */}
         </div>
       </header>
 
@@ -593,7 +592,6 @@ export default function Home() {
         </div>
         {/* </div> */}
       </footer>
-
     </div>
   );
 }
