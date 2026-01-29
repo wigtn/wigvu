@@ -1,13 +1,13 @@
 <div align="center">
 
-# WIGTN Player - WIGPL !
+# WIGVU (윅뷰)
 
-YouTube subtitle extraction, translation, and real-time synchronization service.
+**WIGTN View** - YouTube subtitle extraction, translation, and real-time synchronization service.
 
 [English](./README.md) | [한국어](./README.ko.md)
 
-![CI](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/ci.yml/badge.svg)
-![CD](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/cd.yml/badge.svg)
+![CI](https://github.com/wigtn/wigvu/actions/workflows/ci.yml/badge.svg)
+![CD](https://github.com/wigtn/wigvu/actions/workflows/cd.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -63,7 +63,7 @@ The entire microservices architecture (Web, API, AI) was designed and implemente
 ## Project Structure
 
 ```
-quickpreview/
+wigvu/
 ├── apps/
 │   ├── web/              # Frontend (Next.js 16)
 │   ├── api/              # Backend API Gateway (NestJS 10)
@@ -107,8 +107,8 @@ quickpreview/
 
 ```bash
 # Clone repository
-git clone https://github.com/wigtn/wigtn-quickpreview.git
-cd wigtn-quickpreview
+git clone https://github.com/wigtn/wigvu.git
+cd wigvu
 
 # Configure environment
 cp .env.example .env
@@ -193,9 +193,9 @@ Pre-built images are available on Docker Hub:
 docker-compose -f docker-compose.hub.yml up -d
 ```
 
-- `morirokim/wigtn-web:latest`
-- `morirokim/wigtn-api:latest`
-- `morirokim/wigtn-ai:latest`
+- `morirokim/wigvu-web:latest`
+- `morirokim/wigvu-api:latest`
+- `morirokim/wigvu-ai:latest`
 
 ### GCP Deployment
 
@@ -207,7 +207,7 @@ docker-compose -f docker-compose.hub.yml up -d
 
 ## Documentation
 
-- [PRD - QuickPreview Service](./docs/prd/quickpreview-service.md)
+- [PRD - WIGVU Service](./docs/prd/quickpreview-service.md)
 - [PRD - AI Service](./docs/prd/ai-service.md)
 - [PRD - Service Separation](./docs/prd/service-separation-refactoring.md)
 

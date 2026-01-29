@@ -1,13 +1,13 @@
 <div align="center">
 
-# WIGTN Player - WIGPL !
+# WIGVU (윅뷰)
 
-YouTube 영상의 자막을 추출하고 한국어로 번역하여 실시간으로 동기화된 스크립트를 제공하는 서비스입니다.
+**WIGTN View** - YouTube 영상의 자막을 추출하고 한국어로 번역하여 실시간으로 동기화된 스크립트를 제공하는 서비스입니다.
 
 [English](./README.md) | [한국어](./README.ko.md)
 
-![CI](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/ci.yml/badge.svg)
-![CD](https://github.com/wigtn/wigtn-quickpreview/actions/workflows/cd.yml/badge.svg)
+![CI](https://github.com/wigtn/wigvu/actions/workflows/ci.yml/badge.svg)
+![CD](https://github.com/wigtn/wigvu/actions/workflows/cd.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -63,7 +63,7 @@ YouTube 영상의 자막을 추출하고 한국어로 번역하여 실시간으�
 ## 프로젝트 구조
 
 ```
-quickpreview/
+wigvu/
 ├── apps/
 │   ├── web/              # 프론트엔드 (Next.js 16)
 │   ├── api/              # 백엔드 API 게이트웨이 (NestJS 10)
@@ -107,8 +107,8 @@ quickpreview/
 
 ```bash
 # 저장소 클론
-git clone https://github.com/wigtn/wigtn-quickpreview.git
-cd wigtn-quickpreview
+git clone https://github.com/wigtn/wigvu.git
+cd wigvu
 
 # 환경변수 설정
 cp .env.example .env
@@ -193,9 +193,9 @@ Docker Hub에서 빌드된 이미지를 사용할 수 있습니다:
 docker-compose -f docker-compose.hub.yml up -d
 ```
 
-- `morirokim/wigtn-web:latest`
-- `morirokim/wigtn-api:latest`
-- `morirokim/wigtn-ai:latest`
+- `morirokim/wigvu-web:latest`
+- `morirokim/wigvu-api:latest`
+- `morirokim/wigvu-ai:latest`
 
 ### GCP 배포
 
@@ -207,7 +207,7 @@ docker-compose -f docker-compose.hub.yml up -d
 
 ## 문서
 
-- [PRD - QuickPreview 서비스](./docs/prd/quickpreview-service.md)
+- [PRD - WIGVU 서비스](./docs/prd/quickpreview-service.md)
 - [PRD - AI 서비스](./docs/prd/ai-service.md)
 - [PRD - 서비스 분리 리팩토링](./docs/prd/service-separation-refactoring.md)
 
