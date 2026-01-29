@@ -207,7 +207,7 @@ docker-compose -f docker-compose.hub.yml up -d
 
 ## Documentation
 
-- [PRD - WIGVU Service](./docs/prd/quickpreview-service.md)
+- [PRD - WIGVU Service](./docs/prd/wigvu-service.md)
 - [PRD - AI Service](./docs/prd/ai-service.md)
 - [PRD - Service Separation](./docs/prd/service-separation-refactoring.md)
 

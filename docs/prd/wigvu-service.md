@@ -1,10 +1,10 @@
-# QuickPreview - 영어 영상 실시간 한글 자막 서비스 PRD
+# WIGVU (윅뷰) - 영어 영상 실시간 한글 자막 서비스 PRD
 
 > **Version**: 1.1
 > **Created**: 2026-01-14
 > **Updated**: 2026-01-14
 > **Status**: Draft (Reviewed)
-> **Project**: QuickPreview (WIGTN)
+> **Project**: WIGVU (WIGTN View)
 
 ---
 
@@ -98,7 +98,7 @@ So that STT를 통해 자막을 생성하고 번역받을 수 있다
 #### Scenario: 자막 있는 영상 분석
 ```gherkin
 Scenario: 자막이 있는 YouTube 영상 번역
-  Given 사용자가 QuickPreview 웹사이트에 접속했다
+  Given 사용자가 WIGVU 웹사이트에 접속했다
   When YouTube URL "https://youtube.com/watch?v=xxx"를 입력하고 분석 버튼을 클릭한다
   Then 영상의 영어 자막이 추출된다
   And 자막이 한국어로 번역된다
@@ -605,7 +605,7 @@ interface VideoAnalysis {
 #### 메인 레이아웃 (결과 화면)
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  [Header: QuickPreview]                        [새 분석]    │
+│  [Header: WIGVU]                               [새 분석]    │
 ├────────────────────────────────┬────────────────────────────┤
 │                                │                            │
 │                                │   번역 스크립트             │
@@ -681,8 +681,8 @@ interface VideoAnalysis {
 
 #### 5.7.1 캐시 구조
 
-**캐시 키**: `qp:${videoId}:${translateTo}`
-**예시**: `qp:dQw4w9WgXcQ:ko`
+**캐시 키**: `wigvu:${videoId}:${translateTo}`
+**예시**: `wigvu:dQw4w9WgXcQ:ko`
 
 | 항목 | 값 |
 |------|---|
@@ -865,7 +865,7 @@ YT_DLP_PATH=/usr/local/bin/yt-dlp  # yt-dlp 실행 파일 경로
 
 ## Appendix
 
-### A. 기존 구현 현황 (quick-preview-frontend)
+### A. 기존 구현 현황 (wigvu-web)
 
 | 기능 | 구현 상태 | 파일 |
 |------|----------|------|
