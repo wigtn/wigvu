@@ -32,7 +32,7 @@ services:
       - app-network
 
   web:
-    image: ghcr.io/wigvu/wigvu-web:latest
+    image: ghcr.io/wigtn/wigvu-web:latest
     ports:
       - "3000:3000"
     environment:
@@ -61,7 +61,7 @@ services:
         max-file: "3"
 
   api:
-    image: ghcr.io/wigvu/wigvu-api:latest
+    image: ghcr.io/wigtn/wigvu-api:latest
     ports:
       - "4000:4000"
     environment:
@@ -99,7 +99,7 @@ services:
         max-file: "3"
 
   ai:
-    image: ghcr.io/wigvu/wigvu-ai:latest
+    image: ghcr.io/wigtn/wigvu-ai:latest
     ports:
       - "5000:5000"
     environment:
