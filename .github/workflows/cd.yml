@@ -213,8 +213,53 @@ jobs:
               cd /opt/wigvu && \
               git pull origin main && \
               docker compose -f docker-compose.hub.yml pull && \
-              docker compose -f docker-compose.hub.yml up -d --remove-orphans && \
+              # 인증서 디렉토리 생성
+              mkdir -p certbot/conf/live/app.wigtn.com && \
+              mkdir -p certbot/www && \
+              # 인증서가 없으면 임시 더미 인증서 생성 (nginx 시작을 위해)
+              if [ ! -f certbot/conf/live/app.wigtn.com/fullchain.pem ]; then
+                echo '임시 더미 인증서를 생성합니다...' && \
+                mkdir -p certbot/conf/live/app.wigtn.com && \
+                openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+                  -keyout certbot/conf/live/app.wigtn.com/privkey.pem \
+                  -out certbot/conf/live/app.wigtn.com/fullchain.pem \
+                  -subj '/CN=app.wigtn.com' 2>/dev/null || echo '더미 인증서 생성 실패 (계속 진행)'
+              fi && \
+              # nginx를 제외한 서비스들 먼저 시작
+              docker compose -f docker-compose.hub.yml up -d web api ai && \
+              # nginx 시작 (더미 인증서로 시작)
+              docker compose -f docker-compose.hub.yml up -d nginx || true && \
               docker system prune -f
+            "
+
+      - name: Setup SSL certificate (initial)
+        run: |
+          gcloud compute ssh ${{ env.GCE_INSTANCE }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --command="
+              cd /opt/wigvu && \
+              # 인증서가 이미 유효한지 확인 (더미 인증서가 아닌 실제 인증서)
+              if [ ! -f certbot/conf/live/app.wigtn.com/fullchain.pem ] || \
+                 [ \$(find certbot/conf/live/app.wigtn.com/fullchain.pem -mtime +1 2>/dev/null | wc -l) -gt 0 ] || \
+                 [ \$(stat -c%s certbot/conf/live/app.wigtn.com/fullchain.pem 2>/dev/null) -lt 1000 ]; then
+                echo 'SSL 인증서가 없거나 유효하지 않습니다. 초기 인증서를 발급합니다...' && \
+                # nginx가 실행 중이어야 webroot 방식이 작동함
+                sleep 5 && \
+                docker compose -f docker-compose.hub.yml run --rm certbot certonly \
+                  --webroot \
+                  --webroot-path=/var/www/certbot \
+                  --email admin@wigtn.com \
+                  --agree-tos \
+                  --no-eff-email \
+                  --non-interactive \
+                  -d app.wigtn.com \
+                  -d www.app.wigtn.com && \
+                echo 'SSL 인증서 발급 완료. nginx를 재시작합니다...' && \
+                docker compose -f docker-compose.hub.yml restart nginx
+              else
+                echo 'SSL 인증서가 이미 존재하고 유효합니다.'
+              fi
             "
 
       - name: Reload nginx gracefully (if config changed)
