@@ -216,6 +216,15 @@ jobs:
               # 인증서 디렉토리 생성
               mkdir -p certbot/conf/live/app.wigtn.com && \
               mkdir -p certbot/www && \
+              # 기존 인증서가 wigtn.com 경로에 있으면 app.wigtn.com으로 복사 또는 심볼릭 링크
+              if [ -f certbot/conf/live/wigtn.com/fullchain.pem ] && [ ! -f certbot/conf/live/app.wigtn.com/fullchain.pem ]; then
+                echo '기존 인증서(wigtn.com)를 app.wigtn.com 경로로 복사합니다...' && \
+                cp -r certbot/conf/live/wigtn.com/* certbot/conf/live/app.wigtn.com/ 2>/dev/null || \
+                (mkdir -p certbot/conf/live/app.wigtn.com && \
+                 cp certbot/conf/live/wigtn.com/fullchain.pem certbot/conf/live/app.wigtn.com/fullchain.pem && \
+                 cp certbot/conf/live/wigtn.com/privkey.pem certbot/conf/live/app.wigtn.com/privkey.pem) && \
+                echo '인증서 복사 완료'
+              fi && \
               # 인증서가 없으면 임시 더미 인증서 생성 (nginx 시작을 위해)
               if [ ! -f certbot/conf/live/app.wigtn.com/fullchain.pem ]; then
                 echo '임시 더미 인증서를 생성합니다...' && \
@@ -239,6 +248,15 @@ jobs:
             --project=${{ env.GCP_PROJECT_ID }} \
             --command="
               cd /opt/wigvu && \
+              # 기존 인증서가 wigtn.com 경로에 있으면 app.wigtn.com으로 복사
+              if [ -f certbot/conf/live/wigtn.com/fullchain.pem ] && [ ! -f certbot/conf/live/app.wigtn.com/fullchain.pem ]; then
+                echo '기존 인증서(wigtn.com)를 app.wigtn.com 경로로 복사합니다...' && \
+                mkdir -p certbot/conf/live/app.wigtn.com && \
+                cp certbot/conf/live/wigtn.com/fullchain.pem certbot/conf/live/app.wigtn.com/fullchain.pem && \
+                cp certbot/conf/live/wigtn.com/privkey.pem certbot/conf/live/app.wigtn.com/privkey.pem && \
+                echo '인증서 복사 완료. nginx를 재시작합니다...' && \
+                docker compose -f docker-compose.hub.yml restart nginx
+              fi && \
               # 인증서가 이미 유효한지 확인 (더미 인증서가 아닌 실제 인증서)
               if [ ! -f certbot/conf/live/app.wigtn.com/fullchain.pem ] || \
                  [ \$(find certbot/conf/live/app.wigtn.com/fullchain.pem -mtime +1 2>/dev/null | wc -l) -gt 0 ] || \
