@@ -78,20 +78,20 @@ export function SidebarOverlay({ isOpen, onClose }: SidebarOverlayProps) {
 
         {/* Nav */}
         <nav className="flex-1 py-2">
-          <div className="sidebar-section-label">학습</div>
+          <div className="sidebar-section-label">Learn</div>
           <SidebarItem
             href="/"
             icon={BookOpen}
-            label="읽기"
+            label="Read"
             active={isStudyActive}
             collapsed={false}
           />
 
-          <div className="sidebar-section-label mt-4">도구</div>
+          <div className="sidebar-section-label mt-4">Tools</div>
           <SidebarItem
             href="/video"
             icon={Film}
-            label="영상 분석"
+            label="Video Analysis"
             active={isVideoActive}
             collapsed={false}
           />
@@ -101,7 +101,7 @@ export function SidebarOverlay({ isOpen, onClose }: SidebarOverlayProps) {
         <div className="border-t border-[var(--border)] py-2 px-3 space-y-1">
           <button onClick={toggleTheme} className="sidebar-item w-full">
             <Sun size={16} />
-            <span>테마 전환</span>
+            <span>Toggle Theme</span>
           </button>
           <a
             href="https://github.com/wigtn/wigvu"

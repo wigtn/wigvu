@@ -64,7 +64,7 @@ export function ScriptPanel({
         <div className="flex items-center gap-2">
           <Languages className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">
-            {isKorean ? "자막" : "번역 스크립트"}
+            {isKorean ? "Subtitles" : "Translated Script"}
           </span>
           <span className="text-xs text-muted-foreground">
             {segments.length}
@@ -83,9 +83,9 @@ export function ScriptPanel({
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:text-foreground"
                 )}
-                title="원본/번역 동시 표시"
+                title="Show both original and translation"
               >
-                원본/번역
+                Both
               </button>
               <button
                 onClick={() => setDisplayMode("original")}
@@ -95,9 +95,9 @@ export function ScriptPanel({
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:text-foreground"
                 )}
-                title="원문만 표시"
+                title="Show original only"
               >
-                원문
+                Original
               </button>
               <button
                 onClick={() => setDisplayMode("translated")}
@@ -107,9 +107,9 @@ export function ScriptPanel({
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:text-foreground"
                 )}
-                title="번역본만 표시"
+                title="Show translation only"
               >
-                번역
+                Translation
               </button>
             </div>
           )}
@@ -123,7 +123,7 @@ export function ScriptPanel({
                 ? "bg-foreground text-background"
                 : "bg-muted hover:bg-muted/80 text-muted-foreground"
             )}
-            title={autoScrollEnabled ? "자동 스크롤 켜짐" : "자동 스크롤 꺼짐"}
+            title={autoScrollEnabled ? "Auto-scroll on" : "Auto-scroll off"}
           >
             <Scroll className="w-4 h-4" />
           </button>

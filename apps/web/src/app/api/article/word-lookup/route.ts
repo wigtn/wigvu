@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (!response.ok || !result.success) {
       logger.error("AI word-lookup error", { status: response.status, error: result.error });
       return NextResponse.json(
-        { success: false, error: result.error || { code: "ANALYSIS_FAILED", message: "단어 조회에 실패했습니다" } },
+        { success: false, error: result.error || { code: "ANALYSIS_FAILED", message: "Word lookup failed" } },
         { status: response.status },
       );
     }

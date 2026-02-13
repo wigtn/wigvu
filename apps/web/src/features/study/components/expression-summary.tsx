@@ -7,11 +7,11 @@ interface ExpressionSummaryProps {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  idiom: "숙어",
-  collocation: "콜로케이션",
-  slang: "구어체",
-  formal_expression: "격식 표현",
-  grammar_pattern: "문법 패턴",
+  idiom: "Idiom",
+  collocation: "Collocation",
+  slang: "Slang",
+  formal_expression: "Formal",
+  grammar_pattern: "Grammar",
 };
 
 export function ExpressionSummary({ expressions }: ExpressionSummaryProps) {
@@ -32,9 +32,9 @@ export function ExpressionSummary({ expressions }: ExpressionSummaryProps) {
 
   return (
     <div>
-      <h3 className="text-base font-semibold mb-4">표현 복습 요약</h3>
+      <h3 className="text-base font-semibold mb-4">Expression Review Summary</h3>
       <p className="text-sm text-[var(--foreground-secondary)] mb-6">
-        이 글에서 학습한 표현
+        Expressions learned from this text
       </p>
 
       <div className="space-y-5">

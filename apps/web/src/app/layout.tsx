@@ -5,6 +5,7 @@ import { Providers } from "@/shared/components/providers";
 import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { Sidebar } from "@/shared/components/layout/sidebar";
 import { MobileHeader } from "@/shared/components/layout/mobile-header";
+import { TopBar } from "@/shared/components/layout/top-bar";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -12,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WIGVU | 한국어 학습",
-  description: "한국어 텍스트를 읽고, AI가 문장별로 번역해드려요",
+  title: "WIGVU | Learn Korean",
+  description: "Read Korean texts and get AI-powered sentence-by-sentence translations",
 };
 
 export default function RootLayout({
@@ -22,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link
           rel="stylesheet"
@@ -38,6 +39,7 @@ export default function RootLayout({
               <Sidebar />
               <div className="flex flex-col flex-1 min-w-0">
                 <MobileHeader />
+                <TopBar />
                 <main className="app-content">{children}</main>
               </div>
             </div>

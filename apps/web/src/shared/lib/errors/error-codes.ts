@@ -1,12 +1,12 @@
 /**
- * 백엔드/AI 백엔드와 동기화된 에러 코드
+ * Error codes synchronized with backend/AI services
  *
- * 백엔드 소스:
+ * Backend sources:
  * - apps/api/src/common/exceptions/video.exceptions.ts
  * - apps/ai/app/core/exceptions.py
  */
 
-// AI Backend 에러 코드 (apps/ai/app/core/exceptions.py)
+// AI Backend error codes (apps/ai/app/core/exceptions.py)
 export const AI_ERROR_CODES = {
   // 400 errors
   INVALID_REQUEST: 'INVALID_REQUEST',
@@ -32,14 +32,14 @@ export const AI_ERROR_CODES = {
   STT_UNAVAILABLE: 'STT_UNAVAILABLE',
 } as const;
 
-// API Backend 에러 코드 (apps/api/src/common/exceptions/video.exceptions.ts)
+// API Backend error codes (apps/api/src/common/exceptions/video.exceptions.ts)
 export const API_ERROR_CODES = {
   VIDEO_TOO_LONG: 'VIDEO_TOO_LONG',
   NO_TRANSCRIPT: 'NO_TRANSCRIPT',
   PROCESSING_TIMEOUT: 'PROCESSING_TIMEOUT',
   STT_UNAVAILABLE: 'STT_UNAVAILABLE',
 
-  // HTTP 기본 에러 코드
+  // HTTP error codes
   BAD_REQUEST: 'BAD_REQUEST',
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
@@ -51,7 +51,7 @@ export const API_ERROR_CODES = {
   TIMEOUT: 'TIMEOUT',
 } as const;
 
-// Frontend 전용 에러 코드
+// Frontend-only error codes
 export const FRONTEND_ERROR_CODES = {
   INVALID_URL: 'INVALID_URL',
   VIDEO_NOT_FOUND: 'VIDEO_NOT_FOUND',
@@ -59,7 +59,7 @@ export const FRONTEND_ERROR_CODES = {
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const;
 
-// 모든 에러 코드 통합
+// Combined error codes
 export const ERROR_CODES = {
   ...AI_ERROR_CODES,
   ...API_ERROR_CODES,
@@ -69,39 +69,38 @@ export const ERROR_CODES = {
 export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
 
 /**
- * 에러 코드별 상세 정보
+ * Error info per error code
  */
 export interface ErrorInfo {
-  /** 에러 코드 */
+  /** Error code */
   code: ErrorCode;
-  /** 사용자에게 보여줄 메시지 (재치있는 버전) */
+  /** User-facing message */
   userMessage: string;
-  /** 기술적 메시지 (로깅용) */
+  /** Technical message (for logging) */
   technicalMessage: string;
-  /** 리다이렉트가 필요한지 여부 */
+  /** Whether redirect is needed */
   shouldRedirect: boolean;
-  /** 재시도 가능 여부 */
+  /** Whether retry is possible */
   retryable: boolean;
-  /** 재시도 대기 시간 (초) */
+  /** Retry delay in seconds */
   retryAfter?: number;
 }
 
 /**
- * 에러 코드별 사용자 친화적 메시지 매핑
- * 간결하고 자연스러운 톤으로 에러 상황을 안내
+ * User-friendly error message mapping per error code
  */
 export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
-  // === 영상 길이/시간 관련 ===
+  // === Video duration/time related ===
   [ERROR_CODES.VIDEO_TOO_LONG]: {
     code: ERROR_CODES.VIDEO_TOO_LONG,
-    userMessage: '30분 이하 영상만 분석 가능해요. 곧 더 긴 영상도 지원할 예정이에요!',
+    userMessage: 'Only videos under 30 minutes can be analyzed. Longer videos will be supported soon!',
     technicalMessage: 'Video duration exceeds maximum allowed limit',
     shouldRedirect: true,
     retryable: false,
   },
   [ERROR_CODES.PROCESSING_TIMEOUT]: {
     code: ERROR_CODES.PROCESSING_TIMEOUT,
-    userMessage: '분석 시간이 초과됐어요. 잠시 후 다시 시도해주세요.',
+    userMessage: 'Analysis timed out. Please try again shortly.',
     technicalMessage: 'Processing timeout exceeded',
     shouldRedirect: true,
     retryable: true,
@@ -109,94 +108,94 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
   },
   [ERROR_CODES.AUDIO_TOO_LONG]: {
     code: ERROR_CODES.AUDIO_TOO_LONG,
-    userMessage: '음성 인식은 짧은 영상만 지원해요. 자막이 있는 영상을 추천드려요!',
+    userMessage: 'Speech recognition only supports short videos. Try a video with subtitles!',
     technicalMessage: 'Audio duration exceeds STT processing limit',
     shouldRedirect: true,
     retryable: false,
   },
   [ERROR_CODES.TIMEOUT]: {
     code: ERROR_CODES.TIMEOUT,
-    userMessage: '요청 시간이 초과됐어요. 잠시 후 다시 시도해주세요.',
+    userMessage: 'Request timed out. Please try again shortly.',
     technicalMessage: 'Request timeout',
     shouldRedirect: true,
     retryable: true,
     retryAfter: 10,
   },
 
-  // === 텍스트/자막 관련 ===
+  // === Text/subtitle related ===
   [ERROR_CODES.TRANSCRIPT_TOO_LONG]: {
     code: ERROR_CODES.TRANSCRIPT_TOO_LONG,
-    userMessage: '자막이 너무 길어서 처리할 수 없어요. 더 짧은 영상으로 시도해주세요.',
+    userMessage: 'The subtitles are too long to process. Please try a shorter video.',
     technicalMessage: 'Transcript exceeds maximum allowed length',
     shouldRedirect: true,
     retryable: false,
   },
   [ERROR_CODES.NO_TRANSCRIPT]: {
     code: ERROR_CODES.NO_TRANSCRIPT,
-    userMessage: '이 영상에는 자막이 없어요. 자막이 있는 영상을 선택해주세요.',
+    userMessage: 'This video has no subtitles. Please choose a video with subtitles.',
     technicalMessage: 'No transcript available for this video',
     shouldRedirect: true,
     retryable: false,
   },
   [ERROR_CODES.TITLE_TOO_LONG]: {
     code: ERROR_CODES.TITLE_TOO_LONG,
-    userMessage: '영상 제목이 너무 길어요. 다른 영상을 시도해주세요.',
+    userMessage: 'The video title is too long. Please try another video.',
     technicalMessage: 'Video title exceeds maximum length',
     shouldRedirect: true,
     retryable: false,
   },
 
-  // === Rate Limit 관련 ===
+  // === Rate limit related ===
   [ERROR_CODES.RATE_LIMIT_EXCEEDED]: {
     code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
-    userMessage: '요청이 너무 많아요. 1분 후 다시 시도해주세요.',
+    userMessage: 'Too many requests. Please try again in 1 minute.',
     technicalMessage: 'Rate limit exceeded',
     shouldRedirect: false,
     retryable: true,
     retryAfter: 60,
   },
 
-  // === URL/영상 관련 ===
+  // === URL/video related ===
   [ERROR_CODES.INVALID_URL]: {
     code: ERROR_CODES.INVALID_URL,
-    userMessage: '올바른 YouTube URL을 입력해주세요.',
+    userMessage: 'Please enter a valid YouTube URL.',
     technicalMessage: 'Invalid YouTube URL format',
     shouldRedirect: false,
     retryable: true,
   },
   [ERROR_CODES.INVALID_REQUEST]: {
     code: ERROR_CODES.INVALID_REQUEST,
-    userMessage: '요청 형식이 올바르지 않아요. 다시 시도해주세요.',
+    userMessage: 'Invalid request format. Please try again.',
     technicalMessage: 'Invalid request format',
     shouldRedirect: false,
     retryable: true,
   },
   [ERROR_CODES.BAD_REQUEST]: {
     code: ERROR_CODES.BAD_REQUEST,
-    userMessage: '잘못된 요청이에요. 다시 확인해주세요.',
+    userMessage: 'Invalid request. Please check and try again.',
     technicalMessage: 'Bad request',
     shouldRedirect: false,
     retryable: true,
   },
   [ERROR_CODES.VIDEO_NOT_FOUND]: {
     code: ERROR_CODES.VIDEO_NOT_FOUND,
-    userMessage: '영상을 찾을 수 없어요. 삭제되었거나 비공개일 수 있어요.',
+    userMessage: 'Video not found. It may have been deleted or set to private.',
     technicalMessage: 'Video not found',
     shouldRedirect: true,
     retryable: false,
   },
   [ERROR_CODES.NOT_FOUND]: {
     code: ERROR_CODES.NOT_FOUND,
-    userMessage: '요청하신 내용을 찾을 수 없어요.',
+    userMessage: 'The requested content could not be found.',
     technicalMessage: 'Resource not found',
     shouldRedirect: true,
     retryable: false,
   },
 
-  // === 서비스 에러 ===
+  // === Service errors ===
   [ERROR_CODES.LLM_ERROR]: {
     code: ERROR_CODES.LLM_ERROR,
-    userMessage: 'AI 분석 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.',
+    userMessage: 'An error occurred during AI analysis. Please try again shortly.',
     technicalMessage: 'LLM service error',
     shouldRedirect: false,
     retryable: true,
@@ -204,7 +203,7 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
   },
   [ERROR_CODES.STT_ERROR]: {
     code: ERROR_CODES.STT_ERROR,
-    userMessage: '음성 인식 중 오류가 발생했어요. 다시 시도해주세요.',
+    userMessage: 'Speech recognition failed. Please try again.',
     technicalMessage: 'STT service error',
     shouldRedirect: false,
     retryable: true,
@@ -212,7 +211,7 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
   },
   [ERROR_CODES.STT_UNAVAILABLE]: {
     code: ERROR_CODES.STT_UNAVAILABLE,
-    userMessage: '음성 인식 서비스를 사용할 수 없어요. 자막이 있는 영상을 사용해주세요.',
+    userMessage: 'Speech recognition service is unavailable. Please use a video with subtitles.',
     technicalMessage: 'STT service unavailable',
     shouldRedirect: true,
     retryable: true,
@@ -220,7 +219,7 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
   },
   [ERROR_CODES.SERVICE_UNAVAILABLE]: {
     code: ERROR_CODES.SERVICE_UNAVAILABLE,
-    userMessage: '서비스가 일시적으로 사용할 수 없어요. 잠시 후 다시 시도해주세요.',
+    userMessage: 'Service is temporarily unavailable. Please try again shortly.',
     technicalMessage: 'Service temporarily unavailable',
     shouldRedirect: false,
     retryable: true,
@@ -228,7 +227,7 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
   },
   [ERROR_CODES.BAD_GATEWAY]: {
     code: ERROR_CODES.BAD_GATEWAY,
-    userMessage: '서버 연결에 문제가 있어요. 잠시 후 다시 시도해주세요.',
+    userMessage: 'Server connection issue. Please try again shortly.',
     technicalMessage: 'Bad gateway error',
     shouldRedirect: false,
     retryable: true,
@@ -236,7 +235,7 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
   },
   [ERROR_CODES.INTERNAL_ERROR]: {
     code: ERROR_CODES.INTERNAL_ERROR,
-    userMessage: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+    userMessage: 'A server error occurred. Please try again shortly.',
     technicalMessage: 'Internal server error',
     shouldRedirect: false,
     retryable: true,
@@ -244,62 +243,62 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
   },
   [ERROR_CODES.NETWORK_ERROR]: {
     code: ERROR_CODES.NETWORK_ERROR,
-    userMessage: '인터넷 연결을 확인해주세요.',
+    userMessage: 'Please check your internet connection.',
     technicalMessage: 'Network connection error',
     shouldRedirect: false,
     retryable: true,
   },
   [ERROR_CODES.UNKNOWN_ERROR]: {
     code: ERROR_CODES.UNKNOWN_ERROR,
-    userMessage: '예상치 못한 오류가 발생했어요. 다시 시도해주세요.',
+    userMessage: 'An unexpected error occurred. Please try again.',
     technicalMessage: 'Unknown error occurred',
     shouldRedirect: true,
     retryable: true,
   },
 
-  // === 권한/인증 관련 ===
+  // === Auth related ===
   [ERROR_CODES.UNAUTHORIZED]: {
     code: ERROR_CODES.UNAUTHORIZED,
-    userMessage: '접근 권한이 없어요. 로그인이 필요할 수 있어요.',
+    userMessage: 'Access denied. You may need to log in.',
     technicalMessage: 'Unauthorized access',
     shouldRedirect: false,
     retryable: false,
   },
   [ERROR_CODES.FORBIDDEN]: {
     code: ERROR_CODES.FORBIDDEN,
-    userMessage: '이 영상에 접근할 수 없어요. 비공개 영상일 수 있어요.',
+    userMessage: 'Cannot access this video. It may be private.',
     technicalMessage: 'Access forbidden',
     shouldRedirect: true,
     retryable: false,
   },
 
-  // === 파일 관련 ===
+  // === File related ===
   [ERROR_CODES.FILE_TOO_LARGE]: {
     code: ERROR_CODES.FILE_TOO_LARGE,
-    userMessage: '파일 크기가 너무 커요. 더 작은 파일을 선택해주세요.',
+    userMessage: 'File is too large. Please choose a smaller file.',
     technicalMessage: 'File size exceeds limit',
     shouldRedirect: true,
     retryable: false,
   },
   [ERROR_CODES.INVALID_FILE]: {
     code: ERROR_CODES.INVALID_FILE,
-    userMessage: '지원하지 않는 파일 형식이에요. 다른 파일을 선택해주세요.',
+    userMessage: 'Unsupported file format. Please choose a different file.',
     technicalMessage: 'Invalid file format',
     shouldRedirect: true,
     retryable: false,
   },
 
-  // === 필수 필드 누락 ===
+  // === Required fields missing ===
   [ERROR_CODES.TITLE_REQUIRED]: {
     code: ERROR_CODES.TITLE_REQUIRED,
-    userMessage: '영상 제목을 가져올 수 없어요. 다른 영상을 시도해주세요.',
+    userMessage: 'Could not retrieve the video title. Please try another video.',
     technicalMessage: 'Video title is required',
     shouldRedirect: true,
     retryable: false,
   },
   [ERROR_CODES.CHANNEL_REQUIRED]: {
     code: ERROR_CODES.CHANNEL_REQUIRED,
-    userMessage: '채널 정보를 가져올 수 없어요. 다른 영상을 시도해주세요.',
+    userMessage: 'Could not retrieve channel info. Please try another video.',
     technicalMessage: 'Channel information is required',
     shouldRedirect: true,
     retryable: false,
@@ -307,14 +306,14 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
 };
 
 /**
- * 에러 코드로 에러 정보 조회
+ * Get error info by error code
  */
 export function getErrorInfo(code: string): ErrorInfo {
   return ERROR_MESSAGES[code] || ERROR_MESSAGES[ERROR_CODES.UNKNOWN_ERROR];
 }
 
 /**
- * API 응답에서 에러 정보 추출
+ * Extract error info from API response
  */
 export function parseApiError(response: {
   error?: {
@@ -326,7 +325,6 @@ export function parseApiError(response: {
   const errorCode = response.error?.code || ERROR_CODES.UNKNOWN_ERROR;
   const errorInfo = getErrorInfo(errorCode);
 
-  // API에서 제공하는 메시지가 있으면 기술적 메시지로 저장
   if (response.error?.message) {
     return {
       ...errorInfo,
@@ -338,7 +336,7 @@ export function parseApiError(response: {
 }
 
 /**
- * HTTP 상태 코드로 기본 에러 정보 조회
+ * Get default error info by HTTP status code
  */
 export function getErrorInfoByStatus(status: number): ErrorInfo {
   const statusCodeMap: Record<number, string> = {

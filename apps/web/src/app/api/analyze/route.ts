@@ -13,7 +13,7 @@ const logger = createLogger("AnalyzeAPI");
 
 // Request body 스키마 검증
 const AnalyzeRequestSchema = z.object({
-  url: z.string().min(1, "URL을 입력해주세요"),
+  url: z.string().min(1, "Please enter a URL"),
   language: z.string().optional().default("auto"),
 });
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: {
             code: ERROR_CODES.INVALID_URL,
-            message: "올바른 YouTube URL을 입력해주세요",
+            message: "Please enter a valid YouTube URL",
           },
         },
         { status: 400 }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: {
               code: ERROR_CODES.VIDEO_NOT_FOUND,
-              message: "영상을 찾을 수 없습니다",
+              message: "Video not found",
             },
           },
           { status: 404 }
@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: {
           code: ERROR_CODES.INTERNAL_ERROR,
-          message: "분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+          message: "An error occurred during analysis. Please try again shortly.",
         },
       },
       { status: 500 }

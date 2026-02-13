@@ -36,7 +36,7 @@ export function StudyInput() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="한국어 텍스트 또는 URL을 붙여넣으세요..."
+        placeholder="Paste Korean text or a URL..."
         className="input-field min-h-[120px] pr-4 pb-12"
         rows={4}
       />
@@ -45,7 +45,7 @@ export function StudyInput() {
       {isUrl && (
         <div className="flex items-center gap-1.5 mt-2 text-xs text-[var(--accent)]">
           <LinkIcon size={12} />
-          <span>URL에서 텍스트를 가져옵니다</span>
+          <span>Text will be fetched from URL</span>
         </div>
       )}
 
@@ -56,7 +56,7 @@ export function StudyInput() {
           disabled={isEmpty}
           className="btn-primary px-4 py-2 text-sm"
         >
-          학습 시작
+          Start Learning
           <ArrowRight size={14} />
         </button>
       </div>

@@ -121,12 +121,12 @@ export function AnalysisView({
 
   const scoreLabel =
     analysis.watchScore >= 8
-      ? "강력 추천"
+      ? "Highly Recommended"
       : analysis.watchScore >= 6
-      ? "추천"
+      ? "Recommended"
       : analysis.watchScore >= 4
-      ? "보통"
-      : "비추천";
+      ? "Average"
+      : "Not Recommended";
 
   return (
     <div className="flex flex-col h-full fade-in">
@@ -168,7 +168,7 @@ export function AnalysisView({
             className={`p-2 rounded-md border transition-colors bg-background border-border hover:bg-muted ${
               isMemoOpen ? "text-accent" : ""
             }`}
-            title="메모"
+            title="Memo"
           >
             <NotebookPen className="w-4 h-4" />
           </button>
@@ -189,7 +189,7 @@ export function AnalysisView({
               {!isPlayerReady && (
                 <div className="w-full h-full flex items-center justify-center">
                   <span className="text-sm text-muted-foreground">
-                    플레이어 로딩 중...
+                    Loading player...
                   </span>
                 </div>
               )}
@@ -247,7 +247,7 @@ export function AnalysisView({
             <div className="h-full flex items-center justify-center bg-(--background-elevated)">
               <div className="text-center text-muted-foreground p-4">
                 <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">자막을 사용할 수 없습니다</p>
+                <p className="text-sm">Subtitles not available</p>
               </div>
             </div>
           )}

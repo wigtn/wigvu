@@ -8,9 +8,9 @@ interface ViewModeToggleProps {
 }
 
 const MODES: { value: ViewMode; label: string }[] = [
-  { value: "interleaved", label: "교차" },
-  { value: "original", label: "원문만" },
-  { value: "translation", label: "번역만" },
+  { value: "interleaved", label: "Both" },
+  { value: "original", label: "Original" },
+  { value: "translation", label: "Translation" },
 ];
 
 export function ViewModeToggle({ mode, onChange }: ViewModeToggleProps) {

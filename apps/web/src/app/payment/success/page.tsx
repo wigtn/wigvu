@@ -27,10 +27,10 @@ function PaymentSuccessContent() {
         
         <div className="space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold">
-            결제가 완료되었습니다!
+            Payment Complete!
           </h1>
           <p className="text-muted-foreground">
-            구독이 성공적으로 활성화되었습니다.
+            Your subscription has been activated successfully.
           </p>
         </div>
 
@@ -39,13 +39,13 @@ function PaymentSuccessContent() {
             onClick={() => router.push("/")}
             className="btn-primary w-full"
           >
-            홈으로 돌아가기
+            Back to Home
           </button>
           <button
             onClick={() => router.push("/analyze")}
             className="btn-ghost w-full"
           >
-            영상 분석 시작하기
+            Start Analyzing Videos
           </button>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function PaymentSuccessPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
-          <div className="text-muted-foreground">로딩 중...</div>
+          <div className="text-muted-foreground">Loading...</div>
         </div>
       }
     >

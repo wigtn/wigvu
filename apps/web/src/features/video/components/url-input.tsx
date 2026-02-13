@@ -19,12 +19,12 @@ export function UrlInput({ onAnalyze, isLoading, compact = false }: UrlInputProp
     e.preventDefault();
 
     if (!url.trim()) {
-      setError("URL을 입력해주세요");
+      setError("Please enter a URL");
       return;
     }
 
     if (!isValidYouTubeUrl(url)) {
-      setError("올바른 유튜브 URL을 입력해주세요");
+      setError("Please enter a valid YouTube URL");
       return;
     }
 
@@ -38,7 +38,7 @@ export function UrlInput({ onAnalyze, isLoading, compact = false }: UrlInputProp
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="YouTube URL 붙여넣기..."
+            placeholder="Paste YouTube URL..."
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
@@ -71,7 +71,7 @@ export function UrlInput({ onAnalyze, isLoading, compact = false }: UrlInputProp
       <div className="flex gap-3">
         <input
           type="text"
-          placeholder="어떤 영상이 궁금하신가요? 지금 바로 분석해보세요!"
+          placeholder="Curious about a video? Analyze it now!"
           value={url}
           onChange={(e) => {
             setUrl(e.target.value);
@@ -91,12 +91,12 @@ export function UrlInput({ onAnalyze, isLoading, compact = false }: UrlInputProp
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>분석 중</span>
+              <span>Analyzing</span>
             </>
           ) : (
             <>
               <Search className="w-4 h-4" />
-              <span>분석하기</span>
+              <span>Analyze</span>
             </>
           )}
         </button>

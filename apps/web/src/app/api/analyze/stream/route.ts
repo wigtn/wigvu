@@ -17,7 +17,7 @@ const logger = createLogger("AnalyzeStreamAPI");
 
 // Request body 스키마 검증
 const AnalyzeRequestSchema = z.object({
-  url: z.string().min(1, "URL을 입력해주세요"),
+  url: z.string().min(1, "Please enter a URL"),
   language: z.string().optional().default("auto"),
 });
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
           sendEvent(controller, {
             type: "error",
             code: ERROR_CODES.INVALID_URL,
-            message: "올바른 YouTube URL을 입력해주세요",
+            message: "Please enter a valid YouTube URL",
           });
           controller.close();
           return;
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "metadata",
           status: "start",
-          message: "영상 정보를 가져오는 중...",
+          message: "Fetching video info...",
         });
 
         let metadata;
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
             sendEvent(controller, {
               type: "error",
               code: ERROR_CODES.VIDEO_NOT_FOUND,
-              message: "영상을 찾을 수 없습니다",
+              message: "Video not found",
             });
             controller.close();
             return;
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "metadata",
           status: "done",
-          message: `"${metadata.title}" 정보 확인 완료`,
+          message: `Video info loaded: "${metadata.title}"`,
         });
 
         // Step 2: 자막 추출
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "transcript",
           status: "start",
-          message: "자막을 추출하는 중...",
+          message: "Extracting subtitles...",
         });
 
         const transcriptResult = await fetchTranscript(
@@ -138,10 +138,10 @@ export async function POST(request: NextRequest) {
 
         const transcriptMessage =
           transcriptSource === "stt"
-            ? "음성 인식으로 자막 추출 완료"
+            ? "Subtitles extracted via speech recognition"
             : transcriptSource === "youtube"
-              ? "YouTube 자막 추출 완료"
-              : "자막을 찾을 수 없습니다";
+              ? "YouTube subtitles extracted"
+              : "No subtitles found";
 
         sendEvent(controller, {
           type: "step",
@@ -166,21 +166,21 @@ export async function POST(request: NextRequest) {
           if (!isKorean && needsTranslation(languageCode)) {
             // 언어 코드를 이름으로 변환
             const languageNames: Record<string, string> = {
-              en: "영어",
-              ja: "일본어",
-              zh: "중국어",
-              es: "스페인어",
-              fr: "프랑스어",
-              de: "독일어",
-              ko: "한국어",
+              en: "English",
+              ja: "Japanese",
+              zh: "Chinese",
+              es: "Spanish",
+              fr: "French",
+              de: "German",
+              ko: "Korean",
             };
-            const languageName = languageNames[languageCode] || "외국어";
+            const languageName = languageNames[languageCode] || "Foreign";
 
             sendEvent(controller, {
               type: "step",
               step: "translation",
               status: "start",
-              message: `${languageName} → 한국어 번역 중...`,
+              message: `Translating ${languageName} → Korean...`,
             });
 
             logger.info("번역 시작", {
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
                 type: "step",
                 step: "translation",
                 status: "done",
-                message: `${translatedSegments.length}개 자막 번역 완료`,
+                message: `${translatedSegments.length} subtitles translated`,
               });
 
               logger.info("번역 완료", {
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
                 type: "step",
                 step: "translation",
                 status: "done",
-                message: "번역 실패, 원본 자막 사용",
+                message: "Translation failed, using original subtitles",
               });
             }
           } else {
@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "analysis",
           status: "start",
-          message: "AI가 영상을 분석하는 중...",
+          message: "AI is analyzing the video...",
         });
 
         const analysisTranscript = translatedSegments
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "analysis",
           status: "done",
-          message: "AI 분석 완료",
+          message: "AI analysis complete",
         });
 
         // Step 5: 결과 반환
@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "complete",
           status: "done",
-          message: "분석이 완료되었습니다!",
+          message: "Analysis complete!",
         });
 
         sendEvent(controller, {
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
         logger.error("Analysis stream error", error);
 
         let errorCode: string = ERROR_CODES.INTERNAL_ERROR;
-        let errorMessage = "분석 중 오류가 발생했습니다.";
+        let errorMessage = "An error occurred during analysis.";
 
         if (error instanceof TranscriptError) {
           errorCode = error.code;

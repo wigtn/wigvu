@@ -146,7 +146,7 @@ export function ArticlePanel({
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Languages className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium">번역 스크립트</span>
+          <span className="text-sm font-medium">Translated Script</span>
           <span className="text-xs text-muted-foreground">
             {sentences.length}
           </span>
@@ -156,9 +156,9 @@ export function ArticlePanel({
         <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
           {(
             [
-              { mode: "both" as const, label: "양쪽" },
-              { mode: "original" as const, label: "원문" },
-              { mode: "translated" as const, label: "번역" },
+              { mode: "both" as const, label: "Both" },
+              { mode: "original" as const, label: "Original" },
+              { mode: "translated" as const, label: "Translation" },
             ] as const
           ).map(({ mode, label }) => (
             <button
@@ -246,7 +246,7 @@ export function ArticlePanel({
                       ? "bg-accent text-background"
                       : "text-muted-foreground/40 hover:text-accent hover:bg-accent/10",
                   )}
-                  title="구조 분석"
+                  title="Parse structure"
                 >
                   <Search className="w-3.5 h-3.5" />
                 </button>

@@ -53,10 +53,10 @@ export default function ReadPage() {
         <div className="w-full max-w-[640px] text-center space-y-6">
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-[var(--foreground)]">
-              영어 기사, 읽으면서 배우세요
+              Learn by Reading Articles
             </h1>
             <p className="text-sm text-[var(--foreground-secondary)]">
-              URL을 붙여넣거나 텍스트를 입력하면 AI가 문장별로 번역하고 표현을 추출해요
+              Paste a URL or enter text and AI will translate sentence by sentence and extract expressions
             </p>
           </div>
 
@@ -80,7 +80,7 @@ export default function ReadPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              텍스트
+              Text
             </button>
           </div>
 
@@ -99,7 +99,7 @@ export default function ReadPage() {
               <textarea
                 value={textValue}
                 onChange={(e) => setTextValue(e.target.value)}
-                placeholder="영어 텍스트를 여기에 붙여넣으세요..."
+                placeholder="Paste English text here..."
                 rows={6}
                 className="w-full px-4 py-3 rounded-xl border border-border bg-[var(--surface)] text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 placeholder:text-muted-foreground/50 resize-none"
               />
@@ -114,7 +114,7 @@ export default function ReadPage() {
               }
               className="w-full py-3 rounded-xl bg-accent text-white font-medium text-sm hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
-              분석 시작
+              Start Analysis
             </button>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function ReadPage() {
           <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
           <div>
             <h2 className="text-lg font-semibold text-foreground">
-              분석 실패
+              Analysis Failed
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               {error.message}
@@ -192,7 +192,7 @@ export default function ReadPage() {
             onClick={handleReset}
             className="px-6 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-all"
           >
-            다시 시도
+            Try Again
           </button>
         </div>
       </div>
@@ -226,13 +226,13 @@ export default function ReadPage() {
                     <span>
                       {new Date(
                         result.article.publishedDate,
-                      ).toLocaleDateString("ko-KR")}
+                      ).toLocaleDateString("en-US")}
                     </span>
                   </>
                 )}
               </div>
               <h1 className="text-sm font-semibold text-foreground truncate">
-                {result.article.title || "기사"}
+                {result.article.title || "Article"}
               </h1>
             </div>
           </div>

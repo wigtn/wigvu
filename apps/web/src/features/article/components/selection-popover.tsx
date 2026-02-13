@@ -43,10 +43,10 @@ export function SelectionPopover({
         if (data.success && data.data) {
           setResult(data.data);
         } else {
-          setError(data.error?.message || "조회 실패");
+          setError(data.error?.message || "Lookup failed");
         }
       } catch {
-        if (!cancelled) setError("네트워크 오류");
+        if (!cancelled) setError("Network error");
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -126,7 +126,7 @@ export function SelectionPopover({
         {isLoading ? (
           <div className="flex items-center gap-2 py-4 justify-center text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">조회 중...</span>
+            <span className="text-sm">Looking up...</span>
           </div>
         ) : error ? (
           <p className="text-sm text-red-500 py-2">{error}</p>
@@ -150,7 +150,7 @@ export function SelectionPopover({
             {result.contextMeaning && (
               <div className="pt-2 border-t border-border/30">
                 <span className="text-[10px] font-medium text-accent uppercase tracking-wider">
-                  이 문장에서
+                  In this sentence
                 </span>
                 <p className="text-sm text-foreground mt-0.5">
                   {result.contextMeaning}
@@ -162,7 +162,7 @@ export function SelectionPopover({
             {result.examples.length > 0 && (
               <div className="pt-2 border-t border-border/30">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  예문
+                  Examples
                 </span>
                 <div className="mt-1 space-y-1">
                   {result.examples.map((ex, i) => (

@@ -273,13 +273,13 @@ export function FloatingMemo({
         <div className="flex items-center gap-2">
           <GripVertical className="w-4 h-4 text-muted-foreground" />
           <NotebookPen className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium">메모</span>
+          <span className="text-sm font-medium">Memo</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setIsMinimized(!isMinimized)}
             className="p-1.5 rounded hover:bg-muted transition-colors"
-            title={isMinimized ? "펼치기" : "접기"}
+            title={isMinimized ? "Expand" : "Collapse"}
           >
             {isMinimized ? (
               <Maximize2 className="w-3.5 h-3.5" />
@@ -290,7 +290,7 @@ export function FloatingMemo({
           <button
             onClick={onClose}
             className="p-1.5 rounded hover:bg-muted transition-colors"
-            title="닫기"
+            title="Close"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -304,14 +304,14 @@ export function FloatingMemo({
           <textarea
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            placeholder="영상을 보면서 메모를 작성하세요..."
+            placeholder="Take notes while watching..."
             className="flex-1 w-full p-3 text-sm bg-(--background-elevated) border border-border rounded-md resize-none focus:outline-none focus:border-accent transition-colors"
           />
 
           {/* Actions */}
           <div className="flex items-center justify-between mt-3 shrink-0">
             <span className="text-xs text-muted-foreground">
-              {memo.length}자
+              {memo.length} chars
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -323,17 +323,17 @@ export function FloatingMemo({
                     ? "bg-muted hover:bg-muted/80 text-foreground"
                     : "bg-muted/50 text-muted-foreground cursor-not-allowed"
                 )}
-                title="클립보드에 복사"
+                title="Copy to clipboard"
               >
                 {copied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-green-500" />
-                    복사됨
+                    Copied
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    복사
+                    Copy
                   </>
                 )}
               </button>
@@ -346,10 +346,10 @@ export function FloatingMemo({
                     ? "bg-accent text-background hover:bg-accent/90"
                     : "bg-accent/50 text-background/50 cursor-not-allowed"
                 )}
-                title="텍스트 파일로 다운로드"
+                title="Download as text file"
               >
                 <Download className="w-3.5 h-3.5" />
-                추출
+                Export
               </button>
             </div>
           </div>

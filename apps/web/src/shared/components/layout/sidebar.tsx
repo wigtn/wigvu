@@ -14,7 +14,6 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { SidebarItem } from "./sidebar-item";
-import { LanguageSelector } from "@/shared/components/language-selector";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -74,7 +73,7 @@ export function Sidebar() {
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="p-1 rounded hover:bg-[var(--background-secondary)] text-[var(--foreground-secondary)] transition-colors"
-          title={isExpanded ? "사이드바 접기" : "사이드바 펼치기"}
+          title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
         >
           {isExpanded ? (
             <PanelLeftClose size={16} />
@@ -87,30 +86,30 @@ export function Sidebar() {
       {/* Nav Items */}
       <nav className="flex-1 py-2">
         <div className="sidebar-section-label" style={{ display: isExpanded ? "block" : "none" }}>
-          학습
+          Learn
         </div>
         <SidebarItem
           href="/"
           icon={BookOpen}
-          label="읽기"
+          label="Read"
           active={isStudyActive}
           collapsed={!isExpanded}
         />
         <SidebarItem
           href="/read"
           icon={Newspaper}
-          label="기사"
+          label="Articles"
           active={isReadActive}
           collapsed={!isExpanded}
         />
 
         <div className="sidebar-section-label mt-4" style={{ display: isExpanded ? "block" : "none" }}>
-          도구
+          Tools
         </div>
         <SidebarItem
           href="/video"
           icon={Film}
-          label="영상 분석"
+          label="Video Analysis"
           active={isVideoActive}
           collapsed={!isExpanded}
         />
@@ -120,13 +119,12 @@ export function Sidebar() {
       <div className="border-t border-[var(--border)] py-2">
         {isExpanded ? (
           <div className="px-3 space-y-1">
-            <LanguageSelector collapsed={false} />
             <button
               onClick={toggleTheme}
               className="sidebar-item w-full"
             >
               {isDark ? <Moon size={16} /> : <Sun size={16} />}
-              <span>{isDark ? "다크 모드" : "라이트 모드"}</span>
+              <span>{isDark ? "Dark Mode" : "Light Mode"}</span>
             </button>
             <a
               href="https://github.com/wigtn/wigvu"
@@ -140,11 +138,10 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-1">
-            <LanguageSelector collapsed={true} />
             <button
               onClick={toggleTheme}
               className="p-2 rounded hover:bg-[var(--background-secondary)] text-[var(--foreground-secondary)] transition-colors"
-              title={isDark ? "다크 모드" : "라이트 모드"}
+              title={isDark ? "Dark Mode" : "Light Mode"}
             >
               {isDark ? <Moon size={16} /> : <Sun size={16} />}
             </button>

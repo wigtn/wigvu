@@ -113,11 +113,11 @@ const Icons = {
 };
 
 const STEP_LABELS: Record<AnalysisStep, string> = {
-  metadata: "영상 정보",
-  transcript: "음성 추출",
-  translation: "번역",
-  analysis: "AI 분석",
-  complete: "완료",
+  metadata: "Video Info",
+  transcript: "Audio Extraction",
+  translation: "Translation",
+  analysis: "AI Analysis",
+  complete: "Complete",
 };
 
 interface LoadingStateProps {
@@ -182,16 +182,16 @@ export function LoadingState({ steps }: LoadingStateProps) {
               <div className="animate-spin-slow">{Icons.analysis}</div>
             </div>
             <h2 className="text-lg font-semibold text-foreground mb-1">
-              영상 분석 중{dots}
+              Analyzing video{dots}
             </h2>
-            <p className="text-sm text-muted-foreground">잠시만 기다려주세요</p>
+            <p className="text-sm text-muted-foreground">Please wait a moment</p>
           </div>
 
           {/* 프로그레스 바 */}
           {steps && (
             <div className="mb-8">
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                <span>진행률</span>
+                <span>Progress</span>
                 <span className="font-mono">{getProgress()}%</span>
               </div>
               <div className="relative h-1.5 bg-muted/50 rounded-full overflow-hidden">
@@ -291,12 +291,12 @@ export function LoadingState({ steps }: LoadingStateProps) {
                       </span>
                       {step.status === "done" && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
-                          완료
+                          Done
                         </span>
                       )}
                       {step.status === "skipped" && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
-                          건너뜀
+                          Skipped
                         </span>
                       )}
                     </div>
@@ -346,7 +346,7 @@ export function LoadingState({ steps }: LoadingStateProps) {
                 d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>경과 시간</span>
+            <span>Elapsed time</span>
             <span className="font-mono font-medium text-foreground tabular-nums">
               {formatTime(elapsedTime)}
             </span>

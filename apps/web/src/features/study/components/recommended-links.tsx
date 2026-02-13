@@ -41,7 +41,7 @@ export function RecommendedLinks() {
   return (
     <div className="text-left mt-8">
       <p className="text-xs font-medium text-[var(--foreground-secondary)] mb-3">
-        추천 글
+        Recommended Articles
       </p>
       <ul className="space-y-2">
         {RECOMMENDED_ARTICLES.map((article, i) => (

@@ -6,9 +6,10 @@ import { SUPPORTED_LANGUAGES } from "@/shared/types/languages";
 
 interface LanguageSelectorProps {
   collapsed: boolean;
+  dropdownPosition?: "sidebar" | "topbar";
 }
 
-export function LanguageSelector({ collapsed }: LanguageSelectorProps) {
+export function LanguageSelector({ collapsed, dropdownPosition = "sidebar" }: LanguageSelectorProps) {
   const [selected, setSelected] = useState("en");
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -48,7 +49,13 @@ export function LanguageSelector({ collapsed }: LanguageSelectorProps) {
           <Globe size={16} />
         </button>
         {isOpen && (
-          <div className="absolute left-full top-0 ml-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px] z-50">
+          <div
+            className={`absolute bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px] z-50 ${
+              dropdownPosition === "topbar"
+                ? "top-full right-0 mt-1"
+                : "left-full top-0 ml-2"
+            }`}
+          >
             {SUPPORTED_LANGUAGES.map((lang) => (
               <button
                 key={lang.code}

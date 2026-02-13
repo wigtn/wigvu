@@ -26,7 +26,7 @@ export async function analyzeArticle(
   targetLanguage: string,
   title?: string,
 ): Promise<StudyAnalysisResult> {
-  logger.debug("Study 분석 요청", {
+  logger.debug("Study analysis request", {
     textLength: text.length,
     targetLanguage,
     hasTitle: !!title,
@@ -47,7 +47,7 @@ export async function analyzeArticle(
   if (!response.ok || !result.success) {
     const errorCode = result.error?.code || "UNKNOWN_ERROR";
     const errorMsg = result.error?.message || `Study analysis failed: ${response.status}`;
-    logger.error("Study 분석 실패", { status: response.status, error: result.error });
+    logger.error("Study analysis failed", { status: response.status, error: result.error });
     throw new StudyAnalysisError(errorCode, errorMsg);
   }
 
@@ -55,7 +55,7 @@ export async function analyzeArticle(
     throw new StudyAnalysisError("EMPTY_RESPONSE", "Study analysis returned empty data");
   }
 
-  logger.debug("Study 분석 완료", {
+  logger.debug("Study analysis complete", {
     sentenceCount: result.data.meta.sentenceCount,
     expressionCount: result.data.meta.expressionCount,
   });

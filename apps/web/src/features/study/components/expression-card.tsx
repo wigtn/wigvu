@@ -7,11 +7,11 @@ interface ExpressionCardProps {
 }
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  idiom: { bg: "var(--level-beginner-bg)", text: "var(--level-beginner)", label: "숙어" },
-  collocation: { bg: "var(--accent-light)", text: "var(--accent)", label: "콜로케이션" },
-  slang: { bg: "var(--level-intermediate-bg)", text: "var(--level-intermediate)", label: "구어체" },
-  formal_expression: { bg: "var(--level-advanced-bg)", text: "var(--level-advanced)", label: "격식 표현" },
-  grammar_pattern: { bg: "var(--accent-light)", text: "var(--info)", label: "문법 패턴" },
+  idiom: { bg: "var(--level-beginner-bg)", text: "var(--level-beginner)", label: "Idiom" },
+  collocation: { bg: "var(--accent-light)", text: "var(--accent)", label: "Collocation" },
+  slang: { bg: "var(--level-intermediate-bg)", text: "var(--level-intermediate)", label: "Slang" },
+  formal_expression: { bg: "var(--level-advanced-bg)", text: "var(--level-advanced)", label: "Formal" },
+  grammar_pattern: { bg: "var(--accent-light)", text: "var(--info)", label: "Grammar" },
 };
 
 export function ExpressionCard({ expression }: ExpressionCardProps) {

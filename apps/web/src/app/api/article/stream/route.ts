@@ -12,7 +12,7 @@ const ArticleRequestSchema = z
     title: z.string().optional(),
   })
   .refine((data) => data.url || data.text, {
-    message: "URL 또는 텍스트를 입력해주세요",
+    message: "Please enter a URL or text",
   });
 
 type SSEEvent =
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
             type: "step",
             step: "crawling",
             status: "start",
-            message: "기사 크롤링 중...",
+            message: "Crawling article...",
           });
 
           try {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
               type: "step",
               step: "crawling",
               status: "done",
-              message: `"${articleTitle}" 가져오기 완료`,
+              message: `Fetched: "${articleTitle}"`,
             });
           } catch (error) {
             if (error instanceof CrawlError) {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
             type: "step",
             step: "crawling",
             status: "done",
-            message: "텍스트 입력 확인",
+            message: "Text input received",
           });
         }
 
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "analyzing",
           status: "start",
-          message: "AI가 번역하고 표현을 추출하는 중...",
+          message: "AI is translating and extracting expressions...",
         });
 
         const aiServiceUrl = process.env.AI_SERVICE_URL;
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
           sendEvent(controller, {
             type: "error",
             code: "CONFIGURATION_ERROR",
-            message: "AI 서비스가 설정되지 않았습니다",
+            message: "AI service not configured",
           });
           controller.close();
           return;
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
             type: "error",
             code: aiResult.error?.code || "ANALYSIS_FAILED",
             message:
-              aiResult.error?.message || "기사 분석에 실패했습니다",
+              aiResult.error?.message || "Article analysis failed",
           });
           controller.close();
           return;
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "analyzing",
           status: "done",
-          message: `${aiResult.data.meta.sentenceCount}개 문장 번역 완료`,
+          message: `${aiResult.data.meta.sentenceCount} sentences translated`,
         });
 
         // Step 3: Return result
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
           type: "step",
           step: "complete",
           status: "done",
-          message: "분석이 완료되었습니다!",
+          message: "Analysis complete!",
         });
 
         sendEvent(controller, {
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
         sendEvent(controller, {
           type: "error",
           code: "INTERNAL_ERROR",
-          message: "분석 중 오류가 발생했습니다",
+          message: "An error occurred during analysis",
         });
 
         isClosed = true;

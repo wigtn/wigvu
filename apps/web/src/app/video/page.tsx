@@ -8,18 +8,18 @@ import { extractVideoId } from "@/features/video/lib/youtube";
 const FEATURES = [
   {
     icon: FileText,
-    title: "AI 요약",
-    description: "영상의 핵심을 정리",
+    title: "AI Summary",
+    description: "Summarize key points",
   },
   {
     icon: Target,
-    title: "핵심 구간",
-    description: "중요한 순간을 타임라인으로",
+    title: "Key Moments",
+    description: "Important moments on a timeline",
   },
   {
     icon: Globe,
-    title: "자막 번역",
-    description: "외국어 영상도 한국어로",
+    title: "Subtitle Translation",
+    description: "Foreign videos translated to Korean",
   },
 ];
 
@@ -47,10 +47,10 @@ export default function VideoPage() {
         {/* Headline */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-[var(--foreground)]">
-            YouTube 영상, 핵심만 빠르게
+            YouTube Videos, Key Points Fast
           </h1>
           <p className="text-sm text-[var(--foreground-secondary)]">
-            URL을 붙여넣으면 AI가 요약하고 핵심 구간을 찾아드려요
+            Paste a URL and AI will summarize and find key moments
           </p>
         </div>
 
@@ -61,7 +61,7 @@ export default function VideoPage() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="YouTube URL을 입력하세요..."
+            placeholder="Paste a YouTube URL..."
             className="input-field pr-28"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -70,7 +70,7 @@ export default function VideoPage() {
               disabled={!url.trim()}
               className="btn-primary px-4 py-2 text-sm"
             >
-              분석
+              Analyze
               <ArrowRight size={14} />
             </button>
           </div>

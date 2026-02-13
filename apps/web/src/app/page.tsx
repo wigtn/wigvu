@@ -10,10 +10,10 @@ export default function Home() {
         {/* Headline */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-[var(--foreground)]">
-            한국어, 읽으면서 배우세요
+            Learn Korean by Reading
           </h1>
           <p className="text-sm text-[var(--foreground-secondary)]">
-            텍스트를 붙여넣으면 AI가 문장별로 번역해드려요
+            Paste any Korean text and AI will translate it sentence by sentence
           </p>
         </div>
 

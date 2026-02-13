@@ -10,10 +10,10 @@ interface ExpressionBarProps {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  idiom: "숙어",
-  phrasal_verb: "구동사",
-  collocation: "연어",
-  technical_term: "전문용어",
+  idiom: "Idiom",
+  phrasal_verb: "Phrasal Verb",
+  collocation: "Collocation",
+  technical_term: "Technical Term",
 };
 
 export function ExpressionBar({
@@ -35,10 +35,10 @@ export function ExpressionBar({
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-accent" />
             <span className="text-sm font-medium">
-              주요 표현
+              Key Expressions
             </span>
             <span className="text-xs text-muted-foreground">
-              {expressions.length}개
+              {expressions.length}
             </span>
           </div>
           {expressions.length > 6 && (
@@ -48,11 +48,11 @@ export function ExpressionBar({
             >
               {isExpanded ? (
                 <>
-                  접기 <ChevronUp className="w-3 h-3" />
+                  Less <ChevronUp className="w-3 h-3" />
                 </>
               ) : (
                 <>
-                  더 보기 <ChevronDown className="w-3 h-3" />
+                  More <ChevronDown className="w-3 h-3" />
                 </>
               )}
             </button>

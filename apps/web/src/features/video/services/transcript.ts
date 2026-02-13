@@ -207,7 +207,7 @@ async function fetchSTTFromAI(
     if (response.status === 413 || response.status === 422) {
       throw new TranscriptError(
         ERROR_CODES.AUDIO_TOO_LONG,
-        "영상이 너무 길어요! 더 짧은 영상을 시도해주세요.",
+        "Video is too long! Please try a shorter video.",
         { status: response.status }
       );
     }
@@ -218,7 +218,7 @@ async function fetchSTTFromAI(
       if (result.error?.code) {
         throw new TranscriptError(
           result.error.code,
-          result.error.message || "STT 처리 중 오류가 발생했습니다",
+          result.error.message || "An error occurred during STT processing",
           { status: response.status }
         );
       }

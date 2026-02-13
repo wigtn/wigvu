@@ -45,7 +45,7 @@ export function KeyMomentsBar({
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <Play className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">핵심 장면</span>
+              <span className="text-xs text-muted-foreground">Key Moments</span>
             </div>
             <div className="horizontal-scroll stagger-children">
               {highlights.map((highlight, index) => (
@@ -72,7 +72,7 @@ export function KeyMomentsBar({
         {/* Watch Score Label */}
         <div className="flex items-center gap-2 shrink-0">
           <Play className="w-3 h-3 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">핵심장면</span>
+          <span className="text-xs text-muted-foreground">Key Moments</span>
         </div>
 
         {/* Divider */}
@@ -110,7 +110,7 @@ export function KeyMomentsBar({
           <div className="shrink-0 max-w-70">
             <div className="flex items-center gap-2 mb-1">
               <Hash className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">키워드</span>
+              <span className="text-xs text-muted-foreground">Keywords</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {keywords.slice(0, 5).map((keyword, index) => (

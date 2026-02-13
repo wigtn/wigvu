@@ -18,7 +18,20 @@ const ROLE_COLORS: Record<string, string> = {
   분사구문: "bg-pink-500/10 text-pink-600 border-pink-500/20",
   전치사구: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20",
   접속사: "bg-gray-500/10 text-gray-600 border-gray-500/20",
-  "to부정사": "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+  "to부정사": "bg-indigo-500/10 text-indigo-600 border-indigo-500/10",
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  주어: "Subject",
+  동사: "Verb",
+  목적어: "Object",
+  보어: "Complement",
+  부사구: "Adverbial",
+  관계사절: "Relative Clause",
+  분사구문: "Participle",
+  전치사구: "Prepositional",
+  접속사: "Conjunction",
+  "to부정사": "Infinitive",
 };
 
 export function SentenceParser({ result, isLoading }: SentenceParserProps) {
@@ -26,7 +39,7 @@ export function SentenceParser({ result, isLoading }: SentenceParserProps) {
     return (
       <div className="flex items-center gap-2 py-4 text-muted-foreground">
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span className="text-sm">구조 분석 중...</span>
+        <span className="text-sm">Parsing structure...</span>
       </div>
     );
   }
@@ -47,7 +60,7 @@ export function SentenceParser({ result, isLoading }: SentenceParserProps) {
                   "bg-gray-500/10 text-gray-600 border-gray-500/20"
                 }`}
               >
-                {component.role}
+                {ROLE_LABELS[component.role] || component.role}
               </span>
               <div className="flex-1">
                 <span className="text-sm font-medium text-foreground">
@@ -67,7 +80,7 @@ export function SentenceParser({ result, isLoading }: SentenceParserProps) {
           <ArrowRight className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
           <div>
             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-              읽는 순서
+              Reading Order
             </span>
             <p className="text-sm text-foreground mt-0.5">
               {result.readingOrder}

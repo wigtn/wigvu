@@ -21,9 +21,9 @@ export interface ArticleAnalysisState {
 }
 
 const INITIAL_STEPS: StepState[] = [
-  { step: "crawling", status: "pending", message: "기사 가져오기" },
-  { step: "analyzing", status: "pending", message: "번역 & 표현 추출" },
-  { step: "complete", status: "pending", message: "완료" },
+  { step: "crawling", status: "pending", message: "Fetching article" },
+  { step: "analyzing", status: "pending", message: "Translating & extracting expressions" },
+  { step: "complete", status: "pending", message: "Complete" },
 ];
 
 export function useArticleAnalysis() {
@@ -111,7 +111,7 @@ export function useArticleAnalysis() {
             message:
               error instanceof Error
                 ? error.message
-                : "연결 오류가 발생했습니다",
+                : "A connection error occurred",
           },
         }));
       }
@@ -168,7 +168,7 @@ export function useArticleAnalysis() {
             isLoading: false,
             error: {
               code: event.code || "UNKNOWN_ERROR",
-              message: event.message || "알 수 없는 오류가 발생했습니다",
+              message: event.message || "An unknown error occurred",
             },
           }));
           break;

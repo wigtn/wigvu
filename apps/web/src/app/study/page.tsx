@@ -59,7 +59,7 @@ function StudyContent() {
           className="flex items-center gap-1.5 text-sm text-[var(--foreground-secondary)] hover:text-[var(--foreground)] transition-colors"
         >
           <ArrowLeft size={16} />
-          새 글
+          New Text
         </button>
       </div>
 
@@ -79,7 +79,7 @@ function StudyContent() {
         <div className="space-y-6 animate-fade-in">
           <div className="flex items-center gap-2 text-sm text-[var(--foreground-secondary)]">
             <div className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-            분석 중...
+            Analyzing...
           </div>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="space-y-2">
@@ -99,7 +99,7 @@ function StudyContent() {
             onClick={() => router.push("/")}
             className="btn-ghost text-sm"
           >
-            다시 시도
+            Try Again
           </button>
         </div>
       )}
@@ -114,7 +114,7 @@ function StudyContent() {
           {result.expressions.length > 0 && (
             <div className="mt-10 pt-8 border-t border-[var(--border)]">
               <h3 className="text-base font-semibold mb-4">
-                핵심 표현 ({result.expressions.length}개)
+                Key Expressions ({result.expressions.length})
               </h3>
               <div className="space-y-3">
                 {result.expressions.map((expr, i) => (
@@ -133,7 +133,7 @@ function StudyContent() {
                   onClick={() => router.push("/")}
                   className="btn-primary px-6 py-2.5"
                 >
-                  새 글 학습하기 →
+                  Study New Text →
                 </button>
               </div>
             </div>

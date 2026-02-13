@@ -29,11 +29,11 @@ export interface AnalysisStreamState {
 }
 
 const INITIAL_STEPS: StepState[] = [
-  { step: "metadata", status: "pending", message: "영상 정보 가져오기" },
-  { step: "transcript", status: "pending", message: "자막 추출" },
-  { step: "translation", status: "pending", message: "번역" },
-  { step: "analysis", status: "pending", message: "AI 분석" },
-  { step: "complete", status: "pending", message: "완료" },
+  { step: "metadata", status: "pending", message: "Fetching video info" },
+  { step: "transcript", status: "pending", message: "Extracting subtitles" },
+  { step: "translation", status: "pending", message: "Translation" },
+  { step: "analysis", status: "pending", message: "AI Analysis" },
+  { step: "complete", status: "pending", message: "Complete" },
 ];
 
 export function useAnalysisStream() {
@@ -135,7 +135,7 @@ export function useAnalysisStream() {
           message:
             error instanceof Error
               ? error.message
-              : "연결 오류가 발생했습니다",
+              : "A connection error occurred",
         },
       }));
     }
@@ -177,7 +177,7 @@ export function useAnalysisStream() {
                 );
                 if (translationStep && translationStep.status === "pending") {
                   translationStep.status = "skipped";
-                  translationStep.message = "한국어 - 번역 불필요";
+                  translationStep.message = "Korean - no translation needed";
                 }
               }
 
@@ -212,7 +212,7 @@ export function useAnalysisStream() {
             isLoading: false,
             error: {
               code: event.code || "UNKNOWN_ERROR",
-              message: event.message || "알 수 없는 오류가 발생했습니다",
+              message: event.message || "An unknown error occurred",
             },
           }));
           break;

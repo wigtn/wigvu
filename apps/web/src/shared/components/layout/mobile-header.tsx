@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import Link from "next/link";
-import { LanguageSelector } from "@/shared/components/language-selector";
 import { SidebarOverlay } from "./sidebar-overlay";
 
 export function MobileHeader() {
@@ -15,14 +14,14 @@ export function MobileHeader() {
         <button
           onClick={() => setIsOpen(true)}
           className="p-1 text-[var(--foreground-secondary)]"
-          aria-label="메뉴 열기"
+          aria-label="Open menu"
         >
           <Menu size={20} />
         </button>
         <Link href="/" className="font-bold text-sm">
           WIGVU
         </Link>
-        <LanguageSelector collapsed={true} />
+        <div className="w-6" />
       </header>
       <SidebarOverlay isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>

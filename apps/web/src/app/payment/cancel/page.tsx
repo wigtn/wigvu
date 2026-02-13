@@ -17,10 +17,10 @@ export default function PaymentCancelPage() {
         
         <div className="space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold">
-            결제가 취소되었습니다
+            Payment Cancelled
           </h1>
           <p className="text-muted-foreground">
-            결제가 취소되었습니다. 언제든지 다시 시도하실 수 있습니다.
+            Your payment was cancelled. You can try again anytime.
           </p>
         </div>
 
@@ -29,13 +29,13 @@ export default function PaymentCancelPage() {
             onClick={() => router.push("/#pricing")}
             className="btn-primary w-full"
           >
-            요금제 다시 보기
+            View Plans
           </button>
           <button
             onClick={() => router.push("/")}
             className="btn-ghost w-full"
           >
-            홈으로 돌아가기
+            Back to Home
           </button>
         </div>
       </div>

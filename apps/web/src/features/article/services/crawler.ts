@@ -61,7 +61,7 @@ function isPrivateUrl(url: string): boolean {
 
 export async function crawlArticle(url: string): Promise<CrawlResult> {
   if (isPrivateUrl(url)) {
-    throw new CrawlError("CRAWL_BLOCKED", "접근할 수 없는 URL입니다");
+    throw new CrawlError("CRAWL_BLOCKED", "This URL cannot be accessed");
   }
 
   logger.info("Crawling article", { url });
@@ -88,7 +88,7 @@ export async function crawlArticle(url: string): Promise<CrawlResult> {
     if (!response.ok) {
       throw new CrawlError(
         "CRAWL_BLOCKED",
-        `기사를 가져올 수 없습니다 (HTTP ${response.status})`,
+        `Failed to fetch article (HTTP ${response.status})`,
       );
     }
 
@@ -96,11 +96,11 @@ export async function crawlArticle(url: string): Promise<CrawlResult> {
   } catch (error) {
     if (error instanceof CrawlError) throw error;
     if (error instanceof Error && error.name === "AbortError") {
-      throw new CrawlError("CRAWL_TIMEOUT", "크롤링 시간이 초과되었습니다");
+      throw new CrawlError("CRAWL_TIMEOUT", "Crawling timed out");
     }
     throw new CrawlError(
       "CRAWL_BLOCKED",
-      "기사를 가져올 수 없습니다. URL을 확인하거나 텍스트를 직접 붙여넣어주세요.",
+      "Failed to fetch article. Please check the URL or paste text directly.",
     );
   }
 
@@ -112,7 +112,7 @@ export async function crawlArticle(url: string): Promise<CrawlResult> {
   if (!article || !article.textContent || article.textContent.trim().length < 100) {
     throw new CrawlError(
       "CONTENT_TOO_SHORT",
-      "분석할 본문이 충분하지 않습니다. 텍스트를 직접 붙여넣어주세요.",
+      "Not enough content to analyze. Please paste text directly.",
     );
   }
 
@@ -142,7 +142,7 @@ export async function crawlArticle(url: string): Promise<CrawlResult> {
   if (content.length > 15000) {
     throw new CrawlError(
       "TEXT_TOO_LONG",
-      "기사가 너무 깁니다 (15,000자 제한). 일부만 복사하여 붙여넣어주세요.",
+      "Article is too long (15,000 char limit). Please copy and paste a portion.",
     );
   }
 
