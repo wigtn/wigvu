@@ -54,3 +54,6 @@ ENV/
 .pytest_cache/
 *.egg-info/
 .eggs/
+
+# references
+docs/reference/

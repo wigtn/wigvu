@@ -1,53 +1,56 @@
 "use client";
 
-import { StudyExpression } from "@/types/study";
-import { cn } from "@/lib/utils";
-
-const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
-  idiom: { label: "Idiom", color: "bg-purple-500/10 text-purple-600" },
-  collocation: { label: "Collocation", color: "bg-blue-500/10 text-blue-600" },
-  slang: { label: "Slang", color: "bg-orange-500/10 text-orange-600" },
-  formal_expression: { label: "Formal", color: "bg-green-500/10 text-green-600" },
-  grammar_pattern: { label: "Grammar", color: "bg-rose-500/10 text-rose-600" },
-};
+import type { StudyExpression } from "@/types/study";
 
 interface ExpressionCardProps {
   expression: StudyExpression;
-  onClickSentence?: (sentenceId: number) => void;
 }
 
-export function ExpressionCard({ expression, onClickSentence }: ExpressionCardProps) {
-  const cat = CATEGORY_LABELS[expression.category] || {
-    label: expression.category,
-    color: "bg-muted text-muted-foreground",
+const CATEGORY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  idiom: { bg: "var(--level-beginner-bg)", text: "var(--level-beginner)", label: "숙어" },
+  collocation: { bg: "var(--accent-light)", text: "var(--accent)", label: "콜로케이션" },
+  slang: { bg: "var(--level-intermediate-bg)", text: "var(--level-intermediate)", label: "구어체" },
+  formal_expression: { bg: "var(--level-advanced-bg)", text: "var(--level-advanced)", label: "격식 표현" },
+  grammar_pattern: { bg: "var(--accent-light)", text: "var(--info)", label: "문법 패턴" },
+};
+
+export function ExpressionCard({ expression }: ExpressionCardProps) {
+  const style = CATEGORY_STYLES[expression.category] || CATEGORY_STYLES.collocation;
+
+  const scrollToSentence = () => {
+    if (expression.sentenceId !== undefined) {
+      const el = document.getElementById(`sentence-${expression.sentenceId + 1}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   };
 
   return (
-    <div className="rounded-lg border border-border p-3 hover:bg-(--background-hover) transition-colors">
-      <div className="flex items-start justify-between gap-2 mb-1.5">
-        <span className="text-sm font-semibold text-foreground">
+    <div
+      className="p-4 rounded-lg bg-[var(--background-secondary)] cursor-pointer hover:bg-[var(--border)] transition-colors"
+      onClick={scrollToSentence}
+    >
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <p className="text-base font-semibold text-[var(--foreground)]">
           {expression.expression}
-        </span>
-        <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full shrink-0 font-medium", cat.color)}>
-          {cat.label}
+        </p>
+        <span
+          className="badge shrink-0"
+          style={{
+            backgroundColor: style.bg,
+            color: style.text,
+          }}
+        >
+          {style.label}
         </span>
       </div>
-
-      <p className="text-sm text-muted-foreground mb-1.5">{expression.meaning}</p>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground/60 italic">
+      <p className="text-sm text-[var(--foreground-secondary)]">
+        {expression.meaning}
+      </p>
+      {expression.context && (
+        <p className="text-xs text-[var(--foreground-secondary)] mt-1 opacity-60">
           &ldquo;{expression.context}&rdquo;
-        </span>
-        {onClickSentence && (
-          <button
-            onClick={() => onClickSentence(expression.sentenceId)}
-            className="text-xs text-accent hover:underline shrink-0 ml-2"
-          >
-            #{expression.sentenceId + 1}
-          </button>
-        )}
-      </div>
+        </p>
+      )}
     </div>
   );
 }

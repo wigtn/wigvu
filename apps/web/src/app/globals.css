@@ -4,15 +4,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ================================================
-   Dark Mode First + Bento Grid Design System
-   - Cool-tone color palette (Cyan/Teal accent)
-   - No gradients (flat design)
-   - Slight border radius (6px)
-   - Ultra compact, single viewport layout
+   WIGVU Design System v2.1
+   - Light mode default, Clean & Minimal
+   - Sidebar navigation (Liner-inspired)
+   - Pretendard typography
    ================================================ */
 
 @theme inline {
-  /* Spacing - Compact scale */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -20,31 +18,31 @@
   --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
 
-  /* Typography scale */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
 
-  /* Line height */
   --leading-tight: 1.2;
   --leading-normal: 1.5;
   --leading-relaxed: 1.6;
+  --leading-reading: 1.8;
 
-  /* Font */
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   --font-mono: var(--font-geist-mono);
 
-  /* Border radius - Slight (6px) */
-  --radius: 6px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
-  /* Theme colors mapping */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -59,69 +57,94 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 48px;
+  --content-max-width: 960px;
+  --reading-max-width: 720px;
+  --input-max-width: 640px;
 }
 
-/* YouTube Dark Mode Color Palette */
+/* Light Mode (Default) */
 :root {
-  /* Backgrounds - YouTube Dark */
-  --background: #0f0f0f;
-  --background-elevated: #212121;
-  --background-hover: #3f3f3f;
+  --background: #FFFFFF;
+  --background-secondary: #F8F9FA;
+  --foreground: #111111;
+  --foreground-secondary: #6B7280;
 
-  /* Foreground */
-  --foreground: #f1f1f1;
-  --foreground-muted: #aaaaaa;
-  --foreground-subtle: #717171;
+  --card: #FFFFFF;
+  --card-foreground: #111111;
+  --muted: #F8F9FA;
+  --muted-foreground: #6B7280;
 
-  /* Card */
-  --card: #212121;
-  --card-foreground: #f1f1f1;
+  --accent: #2563EB;
+  --accent-light: #EFF6FF;
+  --accent-foreground: #FFFFFF;
 
-  /* Muted */
-  --muted: #272727;
-  --muted-foreground: #aaaaaa;
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
 
-  /* Accent - YouTube Blue (links/highlights) */
-  --accent: #3ea6ff;
-  --accent-secondary: #65b8ff;
-  --accent-foreground: #0f0f0f;
-  --accent-glow: rgba(62, 166, 255, 0.25);
+  --border: #E5E7EB;
+  --border-hover: #D1D5DB;
+  --input: #E5E7EB;
+  --ring: #2563EB;
 
-  /* Primary - YouTube Red */
-  --primary: #ff0000;
-  --primary-foreground: #ffffff;
+  --surface: #FFFFFF;
+  --sidebar-bg: #FFFFFF;
+  --sidebar-section: #9CA3AF;
 
-  /* Border */
-  --border: #3f3f3f;
-  --border-hover: #525252;
-  --input: #272727;
-  --ring: #3ea6ff;
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --destructive: #DC2626;
+  --info: #2563EB;
 
-  /* Status */
-  --success: #2ba640;
-  --warning: #f59e0b;
-  --destructive: #ff4e45;
+  --level-beginner: #16A34A;
+  --level-beginner-bg: #F0FDF4;
+  --level-intermediate: #F59E0B;
+  --level-intermediate-bg: #FFFBEB;
+  --level-advanced: #DC2626;
+  --level-advanced-bg: #FEF2F2;
 }
 
-/* Light mode fallback (YouTube Light) */
-.light {
-  --background: #ffffff;
-  --background-elevated: #f2f2f2;
-  --background-hover: #e5e5e5;
-  --foreground: #0f0f0f;
-  --foreground-muted: #606060;
-  --foreground-subtle: #909090;
-  --card: #ffffff;
-  --card-foreground: #0f0f0f;
-  --muted: #f2f2f2;
-  --muted-foreground: #606060;
-  --accent: #065fd4;
-  --accent-foreground: #ffffff;
-  --primary: #ff0000;
-  --primary-foreground: #ffffff;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #065fd4;
+/* Dark Mode */
+.dark {
+  --background: #0A0A0A;
+  --background-secondary: #141414;
+  --foreground: #FAFAFA;
+  --foreground-secondary: #A1A1AA;
+
+  --card: #141414;
+  --card-foreground: #FAFAFA;
+  --muted: #1E1E1E;
+  --muted-foreground: #A1A1AA;
+
+  --accent: #3B82F6;
+  --accent-light: #1E293B;
+  --accent-foreground: #FFFFFF;
+
+  --primary: #3B82F6;
+  --primary-foreground: #FFFFFF;
+
+  --border: #27272A;
+  --border-hover: #3F3F46;
+  --input: #27272A;
+  --ring: #3B82F6;
+
+  --surface: #141414;
+  --sidebar-bg: #0A0A0A;
+  --sidebar-section: #71717A;
+
+  --success: #22C55E;
+  --warning: #FBBF24;
+  --destructive: #EF4444;
+  --info: #3B82F6;
+
+  --level-beginner: #22C55E;
+  --level-beginner-bg: #052e16;
+  --level-intermediate: #FBBF24;
+  --level-intermediate-bg: #422006;
+  --level-advanced: #EF4444;
+  --level-advanced-bg: #450a0a;
 }
 
 @layer base {
@@ -130,6 +153,10 @@
   }
 
   html {
+    color-scheme: light;
+  }
+
+  html.dark {
     color-scheme: dark;
   }
 
@@ -138,15 +165,16 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Typography */
+  /* Typography Scale */
   h1 {
     font-size: var(--text-2xl);
     font-weight: 700;
     line-height: var(--leading-tight);
+    letter-spacing: -0.01em;
   }
 
   h2 {
-    font-size: var(--text-xl);
+    font-size: 1.375rem;
     font-weight: 600;
     line-height: var(--leading-tight);
   }
@@ -159,66 +187,83 @@
 }
 
 @layer components {
-  /* Full viewport layout */
-  .viewport-layout {
-    height: 100vh;
+  /* Sidebar Layout */
+  .app-layout {
     display: flex;
-    flex-direction: column;
+    height: 100vh;
     overflow: hidden;
   }
 
-  /* Bento Card */
-  .bento-card {
-    background: var(--card);
-    border: 1px solid var(--border);
+  .app-sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transition: width 200ms ease;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .app-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Sidebar Item */
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
     border-radius: var(--radius-md);
-    transition: all 200ms ease;
+    color: var(--foreground-secondary);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: all 150ms ease;
+    border-left: 2px solid transparent;
+    margin: 0 8px;
   }
 
-  .bento-card:hover {
-    border-color: var(--border-hover);
+  .sidebar-item:hover {
+    background: var(--background-secondary);
   }
 
-  .bento-card-interactive:hover {
-    border-color: var(--foreground-muted);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  .sidebar-item.active {
+    color: var(--foreground);
+    background: var(--background-secondary);
+    border-left-color: var(--accent);
+    font-weight: 500;
   }
 
-  /* Accent highlight (current subtitle) */
-  .accent-highlight {
-    background: rgba(34, 211, 238, 0.1);
-    border-left: 2px solid var(--accent);
+  .sidebar-section-label {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--sidebar-section);
+    padding: 16px 20px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
-  /* Glow effects */
-  .glow-accent {
-    box-shadow: 0 0 20px var(--accent-glow);
-  }
-
-  .glow-accent-subtle {
-    box-shadow: 0 0 10px var(--accent-glow);
-  }
-
-  /* Button styles - 흑/백 모노톤 */
+  /* Button Styles */
   .btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
-    background: var(--foreground);
-    color: var(--background);
+    background: var(--accent);
+    color: var(--accent-foreground);
     font-size: var(--text-sm);
     font-weight: 500;
     border-radius: var(--radius-md);
     border: none;
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all 150ms ease;
   }
 
   .btn-primary:hover {
-    background: var(--foreground-muted);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0.9;
   }
 
   .btn-primary:disabled {
@@ -233,42 +278,42 @@
     gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
     background: transparent;
-    color: var(--foreground-muted);
+    color: var(--foreground-secondary);
     font-size: var(--text-sm);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all 150ms ease;
   }
 
   .btn-ghost:hover {
-    border-color: var(--foreground);
+    border-color: var(--foreground-secondary);
     color: var(--foreground);
   }
 
-  /* Input styles */
-  .input-dark {
+  /* Input */
+  .input-field {
     width: 100%;
-    padding: var(--space-2) var(--space-3);
-    background: var(--background-elevated);
+    padding: var(--space-4) var(--space-5);
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     color: var(--foreground);
-    font-size: var(--text-sm);
-    transition: all 200ms ease;
+    font-size: var(--text-base);
+    transition: all 150ms ease;
+    resize: none;
   }
 
-  .input-dark:focus {
+  .input-field:focus {
     outline: none;
-    border-color: var(--foreground);
-    box-shadow: 0 0 10px rgba(241, 241, 241, 0.15);
+    border-color: var(--accent);
   }
 
-  .input-dark::placeholder {
-    color: var(--foreground-subtle);
+  .input-field::placeholder {
+    color: var(--foreground-secondary);
   }
 
-  /* Badge - 흑/백 모노톤 */
+  /* Badge */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -276,12 +321,54 @@
     font-size: var(--text-xs);
     font-weight: 500;
     border-radius: 9999px;
-    background: rgba(241, 241, 241, 0.1);
-    color: var(--foreground);
-    border: 1px solid rgba(241, 241, 241, 0.2);
   }
 
-  /* Key Moment Card */
+  /* Cards */
+  .bento-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: all 150ms ease;
+  }
+
+  .bento-card:hover {
+    border-color: var(--border-hover);
+  }
+
+  /* Accent highlight */
+  .accent-highlight {
+    background: var(--accent-light);
+    border-left: 2px solid var(--accent);
+  }
+
+  /* View mode toggle (pill) */
+  .view-mode-toggle {
+    display: inline-flex;
+    background: var(--background-secondary);
+    border-radius: 9999px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .view-mode-toggle button {
+    padding: 6px 16px;
+    font-size: var(--text-sm);
+    border-radius: 9999px;
+    color: var(--foreground-secondary);
+    transition: all 150ms ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .view-mode-toggle button.active {
+    background: var(--surface);
+    color: var(--foreground);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Key Moment Card (video analysis) */
   .key-moment-card {
     flex-shrink: 0;
     width: 140px;
@@ -290,16 +377,16 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all 150ms ease;
   }
 
   .key-moment-card:hover {
-    border-color: var(--foreground-muted);
+    border-color: var(--border-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
-  /* Scrollbar styling */
+  /* Scrollbar */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -318,7 +405,6 @@
     background: var(--border-hover);
   }
 
-  /* Horizontal scroll container */
   .horizontal-scroll {
     display: flex;
     gap: var(--space-3);
@@ -335,43 +421,54 @@
     background: var(--border);
     border-radius: 2px;
   }
+
+  /* Mobile overlay dim */
+  .sidebar-overlay-dim {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, var(--background-secondary) 25%, var(--border) 50%, var(--background-secondary) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
 }
 
 @layer utilities {
-  /* Fade in animation */
   .fade-in,
   .animate-fade-in {
     animation: fadeIn 300ms ease-out;
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Scale in animation (for modals) */
   .animate-scale-in {
     animation: scaleIn 200ms ease-out;
   }
 
   @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
   }
 
-  /* Stagger children animation */
+  .animate-slide-in-left {
+    animation: slideInLeft 200ms ease-out;
+  }
+
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
   .stagger-children > * {
     opacity: 0;
     animation: fadeIn 300ms ease-out forwards;
@@ -383,32 +480,4 @@
   .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
   .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
   .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
-
-  /* Pulse glow */
-  .pulse-glow {
-    animation: pulseGlow 2s ease-in-out infinite;
-  }
-
-  @keyframes pulseGlow {
-    0%, 100% {
-      box-shadow: 0 0 10px var(--accent-glow);
-    }
-    50% {
-      box-shadow: 0 0 25px var(--accent-glow);
-    }
-  }
-
-  /* Floating button animation */
-  .animate-float-button {
-    animation: floatButton 3s ease-in-out infinite;
-  }
-
-  @keyframes floatButton {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-6px);
-    }
-  }
 }
