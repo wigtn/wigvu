@@ -26,7 +26,7 @@ export default function PaymentCancelPage() {
 
         <div className="pt-4 space-y-3">
           <button
-            onClick={() => router.push("/#pricing")}
+            onClick={() => router.push("/pricing")}
             className="btn-primary w-full"
           >
             View Plans

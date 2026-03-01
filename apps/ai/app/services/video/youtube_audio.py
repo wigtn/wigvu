@@ -1,5 +1,6 @@
 """YouTube audio download service using yt-dlp"""
 
+import asyncio
 import tempfile
 import os
 import structlog
@@ -52,28 +53,37 @@ class YouTubeAudioDownloader:
                     'nocheckcertificate': True,
                 }
 
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    # Get video info first to check duration
-                    info = ydl.extract_info(video_url, download=False)
+                def _extract_info(url: str, ydl_opts: dict) -> dict | None:
+                    """Blocking call to yt-dlp extract_info"""
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        return ydl.extract_info(url, download=False)
 
-                    if not info:
-                        logger.error("youtube_audio_info_failed", video_id=video_id)
-                        return None, None
+                def _download(url: str, ydl_opts: dict) -> None:
+                    """Blocking call to yt-dlp download"""
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([url])
 
-                    duration_seconds = info.get('duration', 0)
-                    max_duration_seconds = self.max_duration_minutes * 60
+                # Get video info first to check duration (run in thread)
+                info = await asyncio.to_thread(_extract_info, video_url, ydl_opts)
 
-                    if duration_seconds > max_duration_seconds:
-                        logger.warn(
-                            "youtube_audio_duration_exceeded",
-                            video_id=video_id,
-                            duration=duration_seconds,
-                            max_duration=max_duration_seconds
-                        )
-                        return None, duration_seconds
+                if not info:
+                    logger.error("youtube_audio_info_failed", video_id=video_id)
+                    return None, None
 
-                    # Download the audio
-                    ydl.download([video_url])
+                duration_seconds = info.get('duration', 0)
+                max_duration_seconds = self.max_duration_minutes * 60
+
+                if duration_seconds > max_duration_seconds:
+                    logger.warn(
+                        "youtube_audio_duration_exceeded",
+                        video_id=video_id,
+                        duration=duration_seconds,
+                        max_duration=max_duration_seconds
+                    )
+                    return None, duration_seconds
+
+                # Download the audio (run in thread)
+                await asyncio.to_thread(_download, video_url, ydl_opts)
 
                 # Find the downloaded file
                 audio_file = None

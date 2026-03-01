@@ -7,6 +7,7 @@ import type {
   SentenceParseResult,
 } from "@/features/article/types/article";
 import { cn } from "@/shared/lib/utils";
+import { parseSentence } from "@/shared/lib/api/article-api";
 import { Languages, Search } from "lucide-react";
 import { SentenceParser } from "./sentence-parser";
 import { SelectionPopover } from "./selection-popover";
@@ -69,25 +70,19 @@ export function ArticlePanel({
         const sentence = sentences.find((s) => s.id === sentenceId);
         if (!sentence) return;
 
-        const response = await fetch("/api/article/parse-sentence", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sentence: sentence.original,
-            context: sentences
-              .filter(
-                (s) =>
-                  s.id >= sentenceId - 1 && s.id <= sentenceId + 1,
-              )
-              .map((s) => s.original)
-              .join(" "),
-          }),
-        });
+        const context = sentences
+          .filter(
+            (s) =>
+              s.id >= sentenceId - 1 && s.id <= sentenceId + 1,
+          )
+          .map((s) => s.original)
+          .join(" ");
 
-        const result = await response.json();
+        const result = await parseSentence(sentence.original, context) as { success?: boolean; data?: SentenceParseResult };
         if (result.success && result.data) {
+          const parseData = result.data;
           setParseResults((prev) =>
-            new Map(prev).set(sentenceId, result.data),
+            new Map(prev).set(sentenceId, parseData),
           );
         }
       } catch {

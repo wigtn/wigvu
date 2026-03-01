@@ -1,20 +1,14 @@
 """OpenAI LLM Service for video analysis"""
 
 import json
-import logging
 import structlog
-from openai import OpenAI, APIError, APIConnectionError, RateLimitError as OpenAIRateLimitError
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
-)
+from openai import APIError, APIConnectionError, RateLimitError as OpenAIRateLimitError
 
 from app.config import get_settings
 from app.models import VideoMetadata, STTSegment, AnalysisResult, Highlight
 from app.core.exceptions import LLMError
+from app.services.shared.llm_service import BaseLLMService, LLMConfig
+from app.prompts.video_analysis import get_video_system_prompt
 
 logger = structlog.get_logger()
 
@@ -24,7 +18,14 @@ class LLMService:
 
     def __init__(self):
         settings = get_settings()
-        self.client = OpenAI(api_key=settings.openai_api_key)
+        self._llm = BaseLLMService(
+            default_config=LLMConfig(
+                model=settings.openai_model,
+                temperature=settings.llm_temperature_video,
+                timeout=settings.timeout_analyze,
+                max_retries=settings.retry_max_attempts,
+            )
+        )
         self.model = settings.openai_model
         self.timeout = settings.timeout_analyze
         self.retry_max_attempts = settings.retry_max_attempts
@@ -185,31 +186,7 @@ class LLMService:
 
 (자막이 없어 메타데이터만으로 분석합니다)"""
 
-        system_prompt = """당신은 YouTube 영상 분석 전문가입니다. 영상의 내용을 분석하여 다음 정보를 JSON 형식으로 제공해주세요.
-
-중요: 영상이 어떤 언어든 상관없이 모든 응답(summary, keywords, highlights의 title/description)은 반드시 한국어로 작성하세요.
-
-1. summary: 영상 내용을 3문장으로 요약 (각 문장은 50자 이내)
-   - 중요: 반드시 스크립트(자막 또는 음성 인식 텍스트)를 읽고 실제 영상에서 다루는 핵심 내용을 요약하세요
-   - 제목이나 설명이 아닌, 스크립트에서 말하는 구체적인 내용을 기반으로 작성하세요
-2. watchScore: 시청 가치 점수 (1-10, 정수)
-3. watchScoreReason: 점수 근거 (50자 이내)
-4. keywords: 핵심 키워드 배열 (5-10개) - 스크립트에서 자주 언급되는 주요 개념
-5. highlights: 핵심 구간 배열 (각각 timestamp(초), title(20자이내), description(50자이내))
-   - 기준: 주제가 전환되는 구간을 챕터처럼 선정하세요
-   - 개수는 실제 주제 전환 횟수에 맞게 자유롭게 결정하세요
-   - 전환점이 2개면 2개, 7개면 7개 - 억지로 늘리거나 줄이지 마세요"""
-
-        if has_timestamps:
-            system_prompt += """
-
-타임스탬프 규칙:
-- 스크립트에 [N초] 형식으로 타임스탬프가 표시되어 있습니다 (예: [120초], [450초])
-- highlights의 timestamp는 반드시 스크립트에 있는 숫자를 그대로 사용하세요
-- 예: [120초]가 있으면 timestamp: 120
-- 절대로 스크립트에 없는 시간을 만들어내지 마세요"""
-
-        system_prompt += "\n\nJSON만 반환하세요. 다른 텍스트는 포함하지 마세요."
+        system_prompt = get_video_system_prompt(has_timestamps)
 
         # 세그먼트 시간 범위 로그
         if segments and len(segments) > 0:
@@ -239,7 +216,7 @@ class LLMService:
             )
 
         try:
-            result = await self._call_openai_with_retry(system_prompt, content)
+            result = self._llm.complete_json(system_prompt, content)
         except OpenAIRateLimitError as e:
             logger.error("llm_rate_limit", error=str(e))
             raise LLMError(
@@ -299,37 +276,3 @@ class LLMService:
                 Highlight(**h) for h in validated_highlights
             ]
         )
-
-    async def _call_openai_with_retry(
-        self,
-        system_prompt: str,
-        content: str
-    ) -> dict:
-        """Call OpenAI API with retry logic"""
-        settings = get_settings()
-
-        @retry(
-            stop=stop_after_attempt(settings.retry_max_attempts),
-            wait=wait_exponential(
-                multiplier=settings.retry_base_delay,
-                min=settings.retry_base_delay,
-                max=settings.retry_base_delay * 4
-            ),
-            retry=retry_if_exception_type((APIConnectionError,)),
-            before_sleep=before_sleep_log(logger, logging.WARNING),
-            reraise=True
-        )
-        def _do_request() -> dict:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": content},
-                ],
-                temperature=0.7,
-                response_format={"type": "json_object"},
-                timeout=self.timeout
-            )
-            return json.loads(response.choices[0].message.content or "{}")
-
-        return _do_request()

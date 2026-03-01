@@ -32,6 +32,31 @@ jobs:
       - name: Build
         run: npm run build
 
+  # API (NestJS) 빌드 검증
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
   # AI (FastAPI) 빌드 검증
   build-ai:
     name: Build AI

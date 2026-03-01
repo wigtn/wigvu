@@ -36,6 +36,19 @@ class Settings(BaseSettings):
     timeout_stt: int = 300
     timeout_health: int = 5
 
+    # LLM temperatures
+    llm_temperature_video: float = 0.7
+    llm_temperature_article: float = 0.3
+    llm_temperature_parsing: float = 0.2
+
+    # Translation batch settings
+    translation_batch_size: int = 10
+    translation_context_size: int = 2
+    translation_concurrent_batches: int = 3
+
+    # STT provider
+    stt_provider: str = "whisperx"
+
     # CORS
     cors_origins: str = ""  # Comma-separated origins, empty = allow all (dev only)
 

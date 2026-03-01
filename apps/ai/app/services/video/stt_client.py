@@ -1,19 +1,12 @@
 """External STT API Client"""
 
-import logging
 import httpx
 import structlog
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
-)
 
 from app.config import get_settings
 from app.models import STTResponse, STTSegment
 from app.core.exceptions import STTError, ValidationError, ErrorCode
+from app.services.shared.stt import get_stt_provider
 
 logger = structlog.get_logger()
 
@@ -26,24 +19,17 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 
-def is_retryable_error(exception: BaseException) -> bool:
-    """Check if exception should trigger retry"""
-    if isinstance(exception, httpx.HTTPStatusError):
-        return exception.response.status_code >= 500
-    return isinstance(exception, (httpx.ConnectError, httpx.TimeoutException))
-
-
 class STTClient:
-    """Client for external WhisperX STT API"""
+    """Client for external STT API, using pluggable STT providers"""
 
     def __init__(self):
         settings = get_settings()
-        self.base_url = settings.stt_api_url
         self.max_duration_minutes = settings.stt_max_duration_minutes
         self.max_file_size_mb = settings.max_file_size_mb
         self.timeout = settings.timeout_stt
         self.retry_max_attempts = settings.retry_max_attempts
         self.retry_base_delay = settings.retry_base_delay
+        self._provider = get_stt_provider()
 
     def validate_file(
         self,
@@ -113,8 +99,10 @@ class STTClient:
         )
 
         try:
-            result = await self._transcribe_with_retry(
-                audio_data, filename, language
+            stt_result = await self._provider.transcribe(
+                audio_data=audio_data,
+                filename=filename,
+                language=language,
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code >= 500:
@@ -134,7 +122,7 @@ class STTClient:
                 details={"error": str(e)}
             )
 
-        segments = result.get("segments", [])
+        segments = stt_result.segments
 
         # 세그먼트 시간 범위 로그
         if segments:
@@ -142,8 +130,8 @@ class STTClient:
             last_seg = segments[-1]
             logger.info(
                 "stt_request_complete",
-                text_length=len(result.get("text", "")),
-                language=result.get("language"),
+                text_length=len(stt_result.text),
+                language=stt_result.language,
                 segments_count=len(segments),
                 first_segment_start=first_seg.get("start"),
                 first_segment_end=first_seg.get("end"),
@@ -162,57 +150,19 @@ class STTClient:
         else:
             logger.info(
                 "stt_request_complete",
-                text_length=len(result.get("text", "")),
-                language=result.get("language"),
+                text_length=len(stt_result.text),
+                language=stt_result.language,
                 segments_count=0
             )
 
         return STTResponse(
-            text=result.get("text", ""),
-            language=result.get("language", language),
-            language_probability=result.get("language_probability", 1.0),
+            text=stt_result.text,
+            language=stt_result.language,
+            language_probability=stt_result.language_probability,
             segments=[
-                STTSegment(**seg) for seg in result.get("segments", [])
+                STTSegment(**seg) for seg in stt_result.segments
             ]
         )
-
-    async def _transcribe_with_retry(
-        self,
-        audio_data: bytes,
-        filename: str,
-        language: str
-    ) -> dict:
-        """Execute transcription with retry logic"""
-        settings = get_settings()
-
-        @retry(
-            stop=stop_after_attempt(settings.retry_max_attempts),
-            wait=wait_exponential(
-                multiplier=settings.retry_base_delay,
-                min=settings.retry_base_delay,
-                max=settings.retry_base_delay * 4
-            ),
-            retry=retry_if_exception_type((
-                httpx.ConnectError,
-                httpx.TimeoutException,
-            )),
-            before_sleep=before_sleep_log(logger, logging.WARNING),
-            reraise=True
-        )
-        async def _do_request() -> dict:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                files = {"audio": (filename, audio_data, "audio/webm")}
-                data = {"language": language}
-
-                response = await client.post(
-                    f"{self.base_url}/whisperX/transcribe",
-                    files=files,
-                    data=data
-                )
-                response.raise_for_status()
-                return response.json()
-
-        return await _do_request()
 
     def is_within_limit(self, duration_seconds: float) -> bool:
         """Check if audio duration is within limit"""

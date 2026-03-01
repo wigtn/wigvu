@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { VideoAnalysis } from "@/features/video/types/analysis";
+import { analyzeVideoStream } from "@/shared/lib/api/video-api";
 
 // SSE 이벤트 타입 (서버와 동일)
 export type AnalysisStep =
@@ -78,14 +79,7 @@ export function useAnalysisStream() {
     });
 
     try {
-      const response = await fetch("/api/analyze/stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url, language }),
-        signal: abortControllerRef.current.signal,
-      });
+      const response = await analyzeVideoStream(url, language, abortControllerRef.current.signal);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

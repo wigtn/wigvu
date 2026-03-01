@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { ArticleAnalysisResult } from "@/features/article/types/article";
+import { analyzeArticleStream } from "@/shared/lib/api/article-api";
 
 export type ArticleStep = "crawling" | "analyzing" | "complete";
 export type StepStatus = "pending" | "active" | "done";
@@ -64,12 +65,7 @@ export function useArticleAnalysis() {
       });
 
       try {
-        const response = await fetch("/api/article/stream", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-          signal: abortControllerRef.current.signal,
-        });
+        const response = await analyzeArticleStream(input, abortControllerRef.current.signal);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

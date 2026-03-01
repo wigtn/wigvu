@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { WordLookupResult } from "@/features/article/types/article";
+import { lookupWord } from "@/shared/lib/api/article-api";
 import { Loader2, X, Volume2 } from "lucide-react";
 
 interface SelectionPopoverProps {
@@ -31,15 +32,10 @@ export function SelectionPopover({
       setError(null);
 
       try {
-        const response = await fetch("/api/article/word-lookup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ word, sentence }),
-        });
+        const data = await lookupWord(word, sentence) as { success?: boolean; data?: WordLookupResult; error?: { message?: string } };
 
         if (cancelled) return;
 
-        const data = await response.json();
         if (data.success && data.data) {
           setResult(data.data);
         } else {

@@ -2,38 +2,13 @@
 
 import json
 import structlog
-from openai import OpenAI
 
 from app.config import get_settings
 from app.core.exceptions import AIServiceError, ErrorCode
+from app.services.shared.llm_service import BaseLLMService, LLMConfig
+from app.prompts.sentence_parsing import SYSTEM_PROMPT
 
 logger = structlog.get_logger()
-
-SYSTEM_PROMPT = """당신은 영어 문장 구조 분석 전문가입니다.
-한국인 영어 학습자가 긴 영어 문장을 이해할 수 있도록 도와주세요.
-
-주어진 문장을 다음 JSON 형식으로 분석해주세요:
-
-1. "components": 문장 성분별 분해
-   - "id": 고유 번호 (0부터)
-   - "text": 원문 텍스트 조각
-   - "role": 문법적 역할 (주어/동사/목적어/보어/부사구/관계사절/분사구문/전치사구/접속사/to부정사)
-   - "explanation": 한국어 뜻
-   - "parentId": 상위 성분 id (최상위는 null)
-
-2. "readingOrder": 한국어 어순으로 재배열한 읽기 순서 (/ 로 구분)
-
-3. "grammarPoints": 주요 문법 포인트 (해당 시)
-   - "type": 문법 항목명
-   - "explanation": 쉬운 한국어 설명
-   - "highlight": 해당 부분 원문
-
-JSON만 반환하세요."""
-
-
-def _get_openai_client() -> OpenAI:
-    settings = get_settings()
-    return OpenAI(api_key=settings.openai_api_key, timeout=30.0)
 
 
 async def parse_sentence(
@@ -42,7 +17,15 @@ async def parse_sentence(
 ) -> dict:
     """Parse an English sentence into grammatical components."""
     settings = get_settings()
-    client = _get_openai_client()
+
+    llm = BaseLLMService(
+        default_config=LLMConfig(
+            model=settings.openai_model,
+            temperature=settings.llm_temperature_parsing,
+            timeout=30,
+            max_retries=settings.retry_max_attempts,
+        )
+    )
 
     user_content = f"분석할 문장: {sentence}"
     if context:
@@ -51,19 +34,10 @@ async def parse_sentence(
     logger.info("sentence_parse_start", sentence_length=len(sentence))
 
     try:
-        response = client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_content},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.2,
-            timeout=30,
+        result = llm.complete_json(
+            system_prompt=SYSTEM_PROMPT,
+            user_content=user_content,
         )
-
-        content = response.choices[0].message.content
-        result = json.loads(content)
 
         logger.info(
             "sentence_parse_complete",
