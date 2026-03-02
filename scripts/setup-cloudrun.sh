@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# WIGVU Cloud Run Infrastructure Setup
+# WIGVU Cloud Run Infrastructure Setup (3-Service Architecture)
 # Run this script once to set up GCP resources for Cloud Run deployment.
+#
+# Architecture: Web (Next.js) → API (NestJS) → AI (FastAPI) + Supabase
 #
 # Prerequisites:
 #   - gcloud CLI installed and authenticated
-#   - GCP project created
+#   - GCP project created with billing enabled
 #
 # Usage:
 #   export GCP_PROJECT_ID="your-project-id"
@@ -27,10 +29,11 @@ if [[ -z "${GCP_PROJECT_ID:-}" ]]; then
   exit 1
 fi
 
-echo "=== WIGVU Cloud Run Setup ==="
+echo "=== WIGVU Cloud Run Setup (3-Service) ==="
 echo "Project:    ${GCP_PROJECT_ID}"
 echo "Region:     ${REGION}"
 echo "Repository: ${GITHUB_REPO}"
+echo "Services:   wigvu-web, wigvu-api, wigvu-ai"
 echo ""
 
 gcloud config set project "${GCP_PROJECT_ID}"
@@ -58,10 +61,16 @@ fi
 # ─── 3. Create Secret Manager secrets ───────────────────────────────────────
 echo ">>> Creating Secret Manager secrets..."
 SECRETS=(
+  # AI Service
   "OPENAI_API_KEY"
+  "STT_API_URL"
+  # API Service
   "YOUTUBE_API_KEY"
   "INTERNAL_API_KEY"
-  "STT_API_URL"
+  # Supabase (API + Web)
+  "SUPABASE_URL"
+  "SUPABASE_ANON_KEY"
+  "SUPABASE_SERVICE_ROLE_KEY"
 )
 
 for secret in "${SECRETS[@]}"; do
@@ -160,14 +169,33 @@ PROVIDER_FULL=$(gcloud iam workload-identity-pools providers describe "${WIF_PRO
 echo ""
 echo "=== Setup Complete ==="
 echo ""
-echo "Add these as GitHub Repository Secrets:"
-echo "  GCP_PROJECT_ID      = ${GCP_PROJECT_ID}"
-echo "  WIF_PROVIDER        = ${PROVIDER_FULL}"
-echo "  WIF_SERVICE_ACCOUNT = ${SA_EMAIL}"
+echo "┌──────────────────────────────────────────────────────────────┐"
+echo "│  Step 1: Add GitHub Repository Secrets                      │"
+echo "├──────────────────────────────────────────────────────────────┤"
+echo "│  GCP_PROJECT_ID      = ${GCP_PROJECT_ID}"
+echo "│  WIF_PROVIDER        = ${PROVIDER_FULL}"
+echo "│  WIF_SERVICE_ACCOUNT = ${SA_EMAIL}"
+echo "└──────────────────────────────────────────────────────────────┘"
 echo ""
-echo "Then update secret values:"
+echo "┌──────────────────────────────────────────────────────────────┐"
+echo "│  Step 2: Add GitHub Repository Variables                    │"
+echo "├──────────────────────────────────────────────────────────────┤"
+echo "│  FRONTEND_URL         = https://www.app.wigtn.com           │"
+echo "│  CORS_ORIGINS         = https://www.app.wigtn.com           │"
+echo "│  NEXT_PUBLIC_SUPABASE_URL  = https://xxx.supabase.co        │"
+echo "│  NEXT_PUBLIC_SUPABASE_ANON_KEY = your-anon-key              │"
+echo "└──────────────────────────────────────────────────────────────┘"
+echo ""
+echo "┌──────────────────────────────────────────────────────────────┐"
+echo "│  Step 3: Update Secret Manager values                       │"
+echo "├──────────────────────────────────────────────────────────────┤"
 for secret in "${SECRETS[@]}"; do
-  echo "  echo -n 'value' | gcloud secrets versions add ${secret} --data-file=-"
+  echo "│  echo -n 'value' | gcloud secrets versions add ${secret} --data-file=-"
 done
+echo "└──────────────────────────────────────────────────────────────┘"
 echo ""
 echo "Docker registry: ${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/"
+echo ""
+echo "After first deploy, map custom domain:"
+echo "  gcloud run services update wigvu-web --region=${REGION} --add-custom-audiences=www.app.wigtn.com"
+echo "  See: scripts/DEPLOYMENT.md for Cloudflare DNS setup"
