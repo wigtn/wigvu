@@ -77,7 +77,7 @@ export default function VideoPage() {
         </div>
 
         {/* Feature cards */}
-        <div className="grid grid-cols-3 gap-3 mt-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-12">
           {FEATURES.map((feature, i) => {
             const Icon = feature.icon;
             return (

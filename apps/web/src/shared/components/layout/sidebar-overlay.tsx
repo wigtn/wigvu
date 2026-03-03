@@ -62,7 +62,7 @@ export function SidebarOverlay({ isOpen, onClose }: SidebarOverlayProps) {
       />
 
       {/* Sidebar panel */}
-      <div className="absolute left-0 top-0 bottom-0 w-[240px] bg-[var(--sidebar-bg)] border-r border-[var(--border)] animate-slide-in-left flex flex-col">
+      <div className="absolute left-0 top-0 bottom-0 w-[min(240px,85vw)] bg-[var(--sidebar-bg)] border-r border-[var(--border)] animate-slide-in-left flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-3 h-12">
           <Link href="/" className="font-bold text-sm" onClick={onClose}>

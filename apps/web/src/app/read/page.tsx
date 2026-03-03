@@ -93,10 +93,7 @@ function ReadPageContent() {
   // Input view
   if (!isLoading && !result && !error && !hasAutoStarted.current) {
     return (
-      <div
-        className="flex flex-col items-center px-4 sm:px-6"
-        style={{ paddingTop: "15vh" }}
-      >
+      <div className="flex flex-col items-center px-4 sm:px-6 pt-[15vh]">
         <div className="w-full max-w-[640px] text-center space-y-6">
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-[var(--foreground)]">

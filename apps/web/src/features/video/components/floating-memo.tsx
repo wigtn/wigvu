@@ -29,12 +29,19 @@ export function FloatingMemo({
   const [isMinimized, setIsMinimized] = useState(false);
   const [memo, setMemo] = useState("");
   const [copied, setCopied] = useState(false);
-  const [size, setSize] = useState({ width: 320, height: 300 });
+  const [size, setSize] = useState(() => {
+    if (typeof window !== "undefined") {
+      const w = Math.min(320, window.innerWidth - 32);
+      return { width: w, height: 300 };
+    }
+    return { width: 320, height: 300 };
+  });
   const [position, setPosition] = useState(() => {
     if (typeof window !== "undefined") {
-      return { x: window.innerWidth - 320 - 20, y: 80 };
+      const memoWidth = Math.min(320, window.innerWidth - 32);
+      return { x: Math.max(16, window.innerWidth - memoWidth - 16), y: 80 };
     }
-    return { x: 0, y: 80 };
+    return { x: 16, y: 80 };
   });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -179,8 +186,9 @@ export function FloatingMemo({
         const newWidth = resizeRef.current.initialWidth + deltaX;
         const newHeight = resizeRef.current.initialHeight + deltaY;
 
+        const maxWidth = Math.min(600, window.innerWidth - 32);
         setSize({
-          width: Math.max(280, Math.min(600, newWidth)),
+          width: Math.max(240, Math.min(maxWidth, newWidth)),
           height: Math.max(200, Math.min(500, newHeight)),
         });
       });

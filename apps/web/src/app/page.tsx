@@ -34,7 +34,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center px-4 sm:px-6 pb-12">
       {/* Hero Section */}
-      <div className="w-full max-w-[640px] text-center space-y-6" style={{ paddingTop: "10vh" }}>
+      <div className="w-full max-w-[640px] text-center space-y-6 pt-[10vh]">
         {/* Headline */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-[var(--foreground)]">
